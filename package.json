@@ -1,0 +1,68 @@
+{
+  "name": "@chis-finance/v1-chis-finance",
+  "version": "1.1.0-beta.0",
+  "description": "🎚 Peripheral smart contracts for interacting with Chis Finance",
+  "engines": {
+    "node": ">=10"
+  },
+  "homepage": "https://github.com/chis-finance",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chis-finance/chis-farm"
+  },
+  "files": [
+    "build",
+    "contracts"
+  ],
+  "dependencies": {
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.4",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "4.3.0",
+    "@openzeppelin/contracts-upgradeable": "^4.3.0",
+    "@openzeppelin/hardhat-upgrades": "^1.9.0",
+    "@types/chai": "^4.2.6",
+    "@types/mocha": "^5.2.7",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.1.1",
+    "ethereumjs-util": "^6.2.0",
+    "hardhat": "^2.6.0",
+    "mocha": "^6.2.2",
+    "ncp": "^2.0.0",
+    "prettier": "^1.19.1",
+    "ramda": "^0.27.1",
+    "rimraf": "^3.0.0",
+    "solc": "^0.8.7-fixed",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  },
+  "scripts": {
+    "lint": "yarn prettier ./test/*.ts --check",
+    "lint:fix": "yarn prettier ./test/*.ts --write",
+    "clean": "rimraf ./build/",
+    "copy-v1-artifacts": "ncp ./buildV1 ./build",
+    "precompile": "yarn clean",
+    "compile": "waffle",
+    "postcompile": "# compiled",
+    "pretest": "yarn compile",
+    "hardhat:node": "hardhat node --hostname 0.0.0.0",
+    "hardhat:dev": "hardhat --network localhost",
+    "hardhat:test": "hardhat test --network hardhat",
+    "hardhat:prod": "hardhat --network xdai",
+    "hardhat:mainnet": "hardhat --network mainnet",
+    "test": "mocha",
+    "test-erc20": "mocha -g ERC20Token",
+    "test-bytes": "mocha -g BytesStorage",
+    "test-ethers": "mocha -g Ethers",
+    "prepublishOnly": "yarn test",
+    "deploy": "hardhat run scripts/deploy.js --network",
+    "deploy-bsctest": "hardhat run scripts/deploy.js --network bsctest",
+    "deploy-ropsten": "hardhat run scripts/deploy.js --network ropsten",
+    "deploy-heco": "hardhat run scripts/deploy.js --network heco",
+    "verify-heco": "hardhat verify --network heco"
+  },
+  "license": "GPL-3.0-or-later"
+}
