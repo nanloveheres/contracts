@@ -1,2 +1,1 @@
-# smart-contracts
-Calcu Smart Contracts
+# Smart Contracts
