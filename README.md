@@ -1,6 +1,5 @@
-# Chis Finance
-Chis Finance (Smart Contracts)
-- ERC20:     Chis Token
+# Smart Contracts
+- ERC20:     Token
 - Solidity:  ^0.6.6
 - Tool:      ethereum-waffle
 - UnitTest:  TypeScript + mocha + chai
