@@ -1,7 +1,7 @@
 # Smart Contracts
 - ERC20:     Token
-- Solidity:  ^0.6.6
-- Tool:      ethereum-waffle
+- Solidity:  ^0.8.0
+- Tool:      hardhat-waffle ethereum-waffle
 - UnitTest:  TypeScript + mocha + chai
 - Deploy:    hardhat + alchemyapi
 

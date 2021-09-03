@@ -1,8 +1,9 @@
 import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { ether, toEther, parseUnits } from './shared/util'
-import { network, ethers, upgrades } from 'hardhat'
+import { network, ethers } from 'hardhat'
+import { solidity } from 'ethereum-waffle'
+chai.use(solidity)
 
 describe('ERC20Vault', async () => {
     const [owner, alice, bob] = await ethers.getSigners()

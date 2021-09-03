@@ -1,19 +1,22 @@
 import chai, { expect } from 'chai'
 import { BigNumber, Contract, utils } from 'ethers'
-import { network, ethers, upgrades } from 'hardhat'
+import { network, ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { solidity } from 'ethereum-waffle'
+
+chai.use(solidity)
 
 describe('BytesStorage', () => {
     let contract: Contract
 
     let owner: SignerWithAddress
     let alice: SignerWithAddress
-    let bob: SignerWithAddress 
+    let bob: SignerWithAddress
 
     beforeEach(async () => {
         ;[owner, alice, bob] = await ethers.getSigners()
-        const BytesStorage = await ethers.getContractFactory('BytesStorage') 
-    
+        const BytesStorage = await ethers.getContractFactory('BytesStorage')
+
         contract = await BytesStorage.deploy()
         await contract.deployed()
     })

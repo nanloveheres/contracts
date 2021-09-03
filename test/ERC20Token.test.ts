@@ -1,10 +1,12 @@
-import { expect } from 'chai'
+import chai, { expect } from 'chai'
 import { beforeEach } from 'mocha'
 import { Contract } from 'ethers'
 // import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { ether } from './shared/util'
-import { network, ethers, upgrades } from 'hardhat'
+import { network, ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { solidity } from 'ethereum-waffle'
+chai.use(solidity)
 
 let owner: SignerWithAddress
 let alice: SignerWithAddress

@@ -1,8 +1,10 @@
 import '@nomiclabs/hardhat-waffle'
 // import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
-import '@openzeppelin/hardhat-upgrades'
+// import '@openzeppelin/hardhat-upgrades'
+import { HardhatUserConfig, NetworkUserConfig } from 'hardhat/types'
 import { task } from 'hardhat/config'
+import 'hardhat-gas-reporter'
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -19,11 +21,12 @@ task('accounts', 'Prints the list of accounts', async (args, hre) => {
 
 // console.info('env: ', process.env)
 const { PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env
-const MNEMONIC = process.env.MNEMONIC || 'test test test test test test test test test test test junk'
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
+const MNEMONIC = process.env.MNEMONIC || 'test test test test test test test test test test test test'
+
+// You need to export an object to set up your config
+// Go to https://hardhat.org/config/ to learn more
+
+const config: HardhatUserConfig = {
     solidity: {
         version: '0.8.4',
         settings: {
@@ -37,7 +40,7 @@ module.exports = {
     networks: {
         hardhat: {
             accounts: {
-                MNEMONIC,
+                mnemonic: MNEMONIC,
                 accountsBalance: '100000000000000000000000000'
             },
             blockGasLimit: 60000000
@@ -88,3 +91,5 @@ module.exports = {
         // enabled: process.env.REPORT_GAS ? true : false,
     }
 }
+
+export default config
