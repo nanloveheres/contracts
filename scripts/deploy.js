@@ -3,7 +3,6 @@ const fs = require('fs')
 const chalk = require('chalk')
 const { config, ethers, upgrades } = require('hardhat')
 const { utils } = require('ethers')
-const R = require('ramda')
 
 const main = async () => {
     console.log('\n\n 📡 Deploying...\n')

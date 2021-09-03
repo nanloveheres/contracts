@@ -4,7 +4,7 @@ import '../utils/AdminRole.sol';
 
 contract ExampleAdminRole is AdminRole {
     constructor(address super_admin) {
-        _setupRole(SUPER_ROLE, super_admin);
+        _setupRole(OWNER_ROLE, super_admin);
     }
 
     receive() external payable {}

@@ -1,22 +1,19 @@
 import '@nomiclabs/hardhat-waffle'
-import '@nomiclabs/hardhat-ethers'
+// import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
 import '@openzeppelin/hardhat-upgrades'
-// import 'hardhat-deploy'
-// import 'hardhat-gas-reporter'
-// import 'hardhat-docgen'
-// import '@typechain/hardhat'
+import { task } from 'hardhat/config'
 import dotenv from 'dotenv'
 dotenv.config()
 
 // https://hardhat.org/guides/create-task.html
-// task('accounts', 'Prints the list of accounts', async () => {
-//     const accounts = await ethers.getSigners()
+task('accounts', 'Prints the list of accounts', async (args, hre) => {
+    const accounts = await hre.ethers.getSigners()
 
-//     for (const account of accounts) {
-//         console.info(account.address)
-//     }
-// })
+    for (const account of accounts) {
+        console.info(account.address)
+    }
+})
 
 // Go to https://hardhat.org/config/ to learn more
 
@@ -28,7 +25,7 @@ const MNEMONIC = process.env.MNEMONIC || 'test test test test test test test tes
  */
 module.exports = {
     solidity: {
-        version: '0.8.7',
+        version: '0.8.4',
         settings: {
             optimizer: {
                 enabled: true,
@@ -84,5 +81,10 @@ module.exports = {
     },
     mocha: {
         timeout: 20000
+    },
+    gasReporter: {
+        currency: 'USD',
+        gasPrice: 100
+        // enabled: process.env.REPORT_GAS ? true : false,
     }
 }

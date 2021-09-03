@@ -1,34 +1,31 @@
-import chai, { expect } from 'chai'
+import { expect } from 'chai'
+import { beforeEach } from 'mocha'
 import { Contract } from 'ethers'
-import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
+// import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { ether } from './shared/util'
+import { network, ethers, upgrades } from 'hardhat'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import ERC20Token from '../build/ERC20Token.json'
+let owner: SignerWithAddress
+let alice: SignerWithAddress
+let bob: SignerWithAddress
 
-chai.use(solidity)
+let token: Contract
 
-const overrides = {
-    gasLimit: 9999999,
-    gasPrice: 0
-}
+beforeEach(async () => {
+    const ERC20Token = await ethers.getContractFactory('ERC20Token')
+    ;[owner, alice, bob] = await ethers.getSigners()
+
+    token = await ERC20Token.deploy()
+    await token.deployed()
+    await token.deployed()
+    await token.connect(owner).transfer(alice.address, ether(1000))
+})
+
 
 describe('ERC20Token', () => {
-    const provider = new MockProvider({
-        ganacheOptions: {
-            gasLimit: 9999999
-        }
-    })
-    const [walletDeployer, walletAlice, walletBob] = provider.getWallets()
-
-    let token: Contract
-
-    beforeEach(async () => {
-        token = await deployContract(walletDeployer, ERC20Token, [], overrides)
-        await token.transfer(walletAlice.address, ether(1000))
-    })
-
     it('Check token balance', async () => {
-        expect(await token.balanceOf(walletAlice.address)).to.eq(ether(1000))
+        expect(await token.balanceOf(alice.address)).to.eq(ether(1000))
     })
 
     it('Check token symbol', async () => {
@@ -40,22 +37,22 @@ describe('ERC20Token', () => {
     })
 
     it('Transfer adds amount to destination account', async () => {
-        await token.connect(walletAlice).transfer(walletBob.address, ether(10))
-        expect(await token.balanceOf(walletBob.address)).to.eq(ether(10))
+        await token.connect(alice).transfer(bob.address, ether(10))
+        expect(await token.balanceOf(bob.address)).to.eq(ether(10))
     })
 
     it('Transfer emits event', async () => {
-        await expect(token.connect(walletAlice).transfer(walletBob.address, 100))
+        await expect(token.connect(alice).transfer(bob.address, 100))
             .to.emit(token, 'Transfer')
-            .withArgs(walletAlice.address, walletBob.address, 100)
+            .withArgs(alice.address, bob.address, 100)
     })
 
     it('Can not transfer above the amount', async () => {
-        await expect(token.connect(walletAlice).transfer(walletBob.address, ether(1001))).to.be.reverted
+        await expect(token.connect(alice).transfer(bob.address, ether(1001))).to.be.reverted
     })
 
     it('Can not transfer from empty account', async () => {
-        await expect(token.connect(walletBob).transfer(walletAlice.address, 1)).to.be.reverted
+        await expect(token.connect(bob).transfer(alice.address, 1)).to.be.reverted
     })
 
     it('Calls totalSupply on Token contract', async () => {
