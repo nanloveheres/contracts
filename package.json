@@ -1,69 +1,40 @@
 {
-  "name": "farm-sc",
-  "version": "1.1.0-beta.0",
-  "description": "🎚 Peripheral smart contracts for farming",
-  "engines": {
-    "node": ">=10"
+  "name": "hardhat-template",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test"
   },
-  "homepage": "https://github.com",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/"
-  },
-  "files": [
-    "build",
-    "contracts"
-  ],
-  "dependencies": {
-    "@openzeppelin/contracts": "4.3.0",
-    "dotenv": "^10.0.0"
-  },
+  "author": "",
+  "license": "MIT",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.4",
+    "@nomiclabs/hardhat-etherscan": "^2.1.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@typechain/ethers-v5": "^7.0.1",
+    "@typechain/hardhat": "^2.0.2",
     "@types/chai": "^4.2.18",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "^16.7.8",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^15.12.2",
     "chai": "^4.3.4",
+    "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.3.0",
-    "ethereumjs-util": "^6.2.0",
-    "ethers": "^5.4.6",
-    "hardhat": "^2.6.0",
+    "ethers": "^5.3.1",
+    "hardhat": "^2.3.3",
     "hardhat-gas-reporter": "^1.0.4",
-    "ncp": "^2.0.0",
-    "prettier": "^1.19.1",
-    "solc": "^0.8.4",
+    "prettier": "^2.3.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.13",
+    "solhint": "^3.3.6",
+    "solhint-plugin-prettier": "^0.0.5",
+    "ts-generator": "^0.1.1",
     "ts-node": "^10.0.0",
     "typechain": "^5.0.0",
     "typescript": "^4.3.2",
     "yarn-upgrade-all": "^0.5.4"
   },
-  "scripts": {
-    "lint": "yarn prettier ./test/*.ts --check",
-    "lint:fix": "yarn prettier ./test/*.ts --write",
-    "clean": "hardhat clean",
-    "copy-v1-artifacts": "ncp ./buildV1 ./build",
-    "precompile": "yarn clean",
-    "compile": "yarn hardhat compile",
-    "postcompile": "# compiled",
-    "pretest": "# yarn compile",
-    "hardhat:node": "hardhat node --hostname 0.0.0.0",
-    "hardhat:dev": "hardhat --network localhost",
-    "hardhat:test": "hardhat test --network hardhat",
-    "hardhat:prod": "hardhat --network xdai",
-    "hardhat:mainnet": "hardhat --network mainnet",
-    "test": "yarn hardhat test",
-    "test-erc20": "mocha -g ERC20Token",
-    "test-bytes": "mocha -g BytesStorage",
-    "test-ethers": "mocha -g Ethers",
-    "test-vault": "hardhat test ./test/ERC20Vault.spec.ts",
-    "prepublishOnly": "yarn test",
-    "deploy": "hardhat run scripts/deploy.js --network",
-    "deploy-bsctest": "hardhat run scripts/deploy.js --network bsctest",
-    "deploy-ropsten": "hardhat run scripts/deploy.js --network ropsten",
-    "deploy-heco": "hardhat run scripts/deploy.js --network heco",
-    "verify-heco": "hardhat verify --network heco"
-  },
-  "license": "GPL-3.0-or-later"
+  "dependencies": {
+    "@openzeppelin/contracts": "4.3.0"
+  }
 }
