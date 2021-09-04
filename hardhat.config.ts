@@ -14,15 +14,16 @@ import "hardhat-gas-reporter";
 import "@nomiclabs/hardhat-etherscan";
 
 const chainIds = {
-  ganache: 1337,
-  goerli: 5,
-  hardhat: 31337,
-  kovan: 42,
-  mainnet: 1,
-  rinkeby: 4,
-  ropsten: 3,
+    ganache: 1337,
+    goerli: 5,
+    hardhat: 31337,
+    kovan: 42,
+    mainnet: 1,
+    rinkeby: 4,
+    ropsten: 3
 };
 
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const MNEMONIC = process.env.MNEMONIC || "test test test test test test test test test test test test";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
@@ -31,56 +32,71 @@ const ALCHEMY_KEY = process.env.ALCHEMY_KEY || "";
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (args, hre) => {
-  const accounts = await hre.ethers.getSigners();
+    const accounts = await hre.ethers.getSigners();
 
-  for (const account of accounts) {
-    console.log(await account.getAddress());
-  }
+    for (const account of accounts) {
+        console.log(await account.getAddress());
+    }
 });
 
 function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + INFURA_API_KEY;
+  const url = `https://eth-${network}.alchemyapi.io/v2/${ALCHEMY_KEY}`
   return {
-    accounts: {
-      count: 10,
-      initialIndex: 0,
-      mnemonic: MNEMONIC,
-      path: "m/44'/60'/0'/0",
-    },
-    chainId: chainIds[network],
-    url,
+      accounts: [`0x${PRIVATE_KEY}`],
+      chainId: chainIds[network],
+      url
   };
+}
+
+function createTestnetConfigMnemonic(network: keyof typeof chainIds): NetworkUserConfig {
+    const url: string = "https://" + network + ".infura.io/v3/" + INFURA_API_KEY;
+    return {
+        accounts: {
+            count: 10,
+            initialIndex: 0,
+            mnemonic: MNEMONIC,
+            path: "m/44'/60'/0'/0"
+        },
+        chainId: chainIds[network],
+        url
+    };
 }
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
-  networks: {
-    hardhat: {
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-      chainId: chainIds.hardhat,
+    defaultNetwork: "hardhat",
+    networks: {
+        hardhat: {
+            accounts: {
+                mnemonic: MNEMONIC
+            },
+            chainId: chainIds.hardhat
+        },
+        mainnet: createTestnetConfig("mainnet"),
+        goerli: createTestnetConfig("goerli"),
+        kovan: createTestnetConfig("kovan"),
+        rinkeby: createTestnetConfig("rinkeby"),
+        ropsten: createTestnetConfig("ropsten")
     },
-    mainnet: createTestnetConfig("mainnet"),
-    goerli: createTestnetConfig("goerli"),
-    kovan: createTestnetConfig("kovan"),
-    rinkeby: createTestnetConfig("rinkeby"),
-    ropsten: createTestnetConfig("ropsten"),
-  },
-  solidity: {
-    version: '0.8.4',
-  },
-  etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
-  },
-  gasReporter: {
-    currency: "USD",
-    gasPrice: 100,
-    // enabled: process.env.REPORT_GAS ? true : false,
-  }
+    solidity: {
+        version: "0.8.4",
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 200
+            }
+        }
+    },
+    etherscan: {
+        apiKey: ETHERSCAN_API_KEY
+    },
+    gasReporter: {
+        currency: "USD",
+        gasPrice: 100
+        // enabled: process.env.REPORT_GAS ? true : false,
+    }
 };
 
 export default config;

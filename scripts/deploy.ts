@@ -8,15 +8,11 @@ import fs from "fs";
 import chalk from "chalk";
 
 async function main(): Promise<void> {
-    // Hardhat always runs the compile task when running scripts through it.
-    // If this runs in a standalone fashion you may want to call compile manually
-    // to make sure everything is compiled
-    // await run("compile");
-    // We get the contract to deploy
-    const TestTokenFactory: ContractFactory = await ethers.getContractFactory("TestToken");
-    const testToken: Contract = await TestTokenFactory.deploy();
-    await testToken.deployed();
-    console.log("TestToken deployed to: ", testToken.address);
+    await deploy("ERC20Token");
+    // const ERC20Token = await ethers.getContractFactory("ERC20Token");
+    // const erc20Token = await ERC20Token.deploy();
+    // await erc20Token.deployed();
+    // console.log("ERC20Token deployed to: ", erc20Token.address);
 }
 
 const deploy = async (contractName: string, args?: any[], upgradable?: boolean) => {
@@ -50,7 +46,8 @@ const deploy = async (contractName: string, args?: any[], upgradable?: boolean) 
 // for example, on Etherscan
 const abiEncodeArgs = (deployed: Contract, contractArgs: any[]) => {
     // not writing abi encoded args if this does not pass
-    if (!contractArgs || !deployed || !R.hasPath(["interface", "deploy"], deployed)) {
+    // || !R.hasPath(["interface", "deploy"], deployed)
+    if (!contractArgs || !deployed ) {
         return "";
     }
     const encoded = utils.defaultAbiCoder.encode(deployed.interface.deploy.inputs, contractArgs);
