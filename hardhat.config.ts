@@ -40,12 +40,12 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 
 function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url = `https://eth-${network}.alchemyapi.io/v2/${ALCHEMY_KEY}`
-  return {
-      accounts: [`0x${PRIVATE_KEY}`],
-      chainId: chainIds[network],
-      url
-  };
+    const url = `https://eth-${network}.alchemyapi.io/v2/${ALCHEMY_KEY}`;
+    return {
+        accounts: [`0x${PRIVATE_KEY}`],
+        chainId: chainIds[network],
+        url
+    };
 }
 
 function createTestnetConfigMnemonic(network: keyof typeof chainIds): NetworkUserConfig {
@@ -72,13 +72,36 @@ const config: HardhatUserConfig = {
             accounts: {
                 mnemonic: MNEMONIC
             },
+            blockGasLimit: 60000000,
             chainId: chainIds.hardhat
         },
         mainnet: createTestnetConfig("mainnet"),
         goerli: createTestnetConfig("goerli"),
         kovan: createTestnetConfig("kovan"),
         rinkeby: createTestnetConfig("rinkeby"),
-        ropsten: createTestnetConfig("ropsten")
+        ropsten: createTestnetConfig("ropsten"),
+        localhost: {
+            url: "http://localhost:8545/",
+            chainId: 31337,
+            accounts: [`0x${PRIVATE_KEY}`]
+        },
+        bsc: {
+            url: "https://bsc-dataseed.binance.org/",
+            chainId: 56,
+            gasPrice: 1000000000,
+            accounts: [`0x${PRIVATE_KEY}`]
+        },
+        bsctest: {
+            url: `https://data-seed-prebsc-1-s1.binance.org:8545`,
+            chainId: 97,
+            gasPrice: 1000000000,
+            accounts: [`0x${PRIVATE_KEY}`]
+        },
+        heco: {
+            url: "https://http-mainnet-node.huobichain.com",
+            chainId: 128,
+            accounts: [`0x${PRIVATE_KEY}`]
+        }
     },
     solidity: {
         version: "0.8.4",
@@ -88,6 +111,9 @@ const config: HardhatUserConfig = {
                 runs: 200
             }
         }
+    },
+    mocha: {
+        timeout: 20000
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY
