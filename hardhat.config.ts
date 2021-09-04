@@ -9,7 +9,6 @@ import { NetworkUserConfig } from "hardhat/types";
 
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-waffle";
 
 import "hardhat-gas-reporter";
 import "@nomiclabs/hardhat-etherscan";
@@ -24,7 +23,7 @@ const chainIds = {
   ropsten: 3,
 };
 
-const MNEMONIC = process.env.MNEMONIC || "";
+const MNEMONIC = process.env.MNEMONIC || "test test test test test test test test test test test test";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY || "";
