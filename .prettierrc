@@ -5,7 +5,7 @@
   "printWidth": 180,
   "singleQuote": false,
   "tabWidth": 4,
-  "trailingComma": "all",
+  "trailingComma": "none",
   "overrides": [
     {
       "files": "*.sol",

@@ -23,15 +23,11 @@ The following assumes the use of `node@>=10`.
 `yarn test`
 
 
-## Integration Tests
-
-`yarn test-integration`
-
 ## Deploy to Testnet
 
 ```
 export ROPSTEN_PRIVATE_KEY=<Your private key>
-npx hardhat run scripts/deploy.js --network ropsten
+npx hardhat run scripts/deploy.ts --network ropsten
 ```
 or
 `yarn deploy`

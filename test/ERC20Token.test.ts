@@ -1,31 +1,30 @@
 import chai, { expect } from "chai";
 import { beforeEach } from "mocha";
 import { Contract } from "ethers";
-// import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
 import { ether } from "./shared/util";
 import { network, ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { solidity } from "ethereum-waffle";
 
-chai.use(solidity);
-
-let owner: SignerWithAddress;
-let alice: SignerWithAddress;
-let bob: SignerWithAddress;
-
-let token: Contract;
-
-beforeEach(async () => {
-    const ERC20Token = await ethers.getContractFactory("ERC20Token");
-    [owner, alice, bob] = await ethers.getSigners();
-
-    token = await ERC20Token.deploy();
-    await token.deployed();
-    await token.deployed();
-    await token.connect(owner).transfer(alice.address, ether(1000));
-});
+// chai.use(solidity);
 
 describe("ERC20Token", () => {
+    let owner: SignerWithAddress;
+    let alice: SignerWithAddress;
+    let bob: SignerWithAddress;
+
+    let token: Contract;
+
+    beforeEach(async () => {
+        const ERC20Token = await ethers.getContractFactory("ERC20Token");
+        [owner, alice, bob] = await ethers.getSigners();
+
+        token = await ERC20Token.deploy();
+        await token.deployed();
+        await token.deployed();
+        await token.connect(owner).transfer(alice.address, ether(1000));
+    });
+
     it("Check token balance", async () => {
         expect(await token.balanceOf(alice.address)).to.eq(ether(1000));
     });
@@ -44,9 +43,7 @@ describe("ERC20Token", () => {
     });
 
     it("Transfer emits event", async () => {
-        await expect(token.connect(alice).transfer(bob.address, 100))
-            .to.emit(token, "Transfer")
-            .withArgs(alice.address, bob.address, 100);
+        await expect(token.connect(alice).transfer(bob.address, 100)).to.emit(token, "Transfer").withArgs(alice.address, bob.address, 100);
     });
 
     it("Can not transfer above the amount", async () => {

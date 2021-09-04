@@ -1,9 +1,12 @@
 {
-  "name": "hardhat-template",
-  "version": "0.0.1",
+  "name": "hardhat-farm",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "yarn prettier ./test/*.ts --check",
+    "lint:fix": "yarn prettier ./test/*.ts --write",
+    "clean": "hardhat clean",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test"
   },
