@@ -1,17 +1,18 @@
 {
-  "arrowParens": "avoid",
-  "bracketSpacing": true,
-  "endOfLine":"auto",
-  "printWidth": 180,
-  "singleQuote": false,
-  "tabWidth": 4,
-  "trailingComma": "none",
-  "overrides": [
-    {
-      "files": "*.sol",
-      "options": {
-        "tabWidth": 4
-      }
-    }
-  ]
+    "arrowParens": "avoid",
+    "bracketSpacing": true,
+    "printWidth": 180,
+    "singleQuote": false,
+    "tabWidth": 4,
+    "endOfLine": "auto",
+    "trailingComma": "none",
+    "semi": false,
+    "overrides": [
+        {
+            "files": "*.json",
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
 }
