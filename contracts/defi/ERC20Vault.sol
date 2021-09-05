@@ -15,7 +15,8 @@ contract ERC20Vault is AdminRole {
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 rewardDebt; // Reward debt or paid reward.
+        uint256 rewardBalance;
         uint256 depositTime;
     }
 
@@ -50,6 +51,99 @@ contract ERC20Vault is AdminRole {
 
     constructor() {}
 
+    /// Deposit staking token into the contract to earn rewards.
+    /// @dev Since this contract needs to be supplied with rewards we are
+    ///  sending the balance of the contract if the pending rewards are higher
+    /// @param _amount The amount of staking tokens to deposit
+    function deposit(uint256 _pid, uint256 _amount) external payable {
+        require(_pid < poolCount, "invalid pool id");
+        require(_amount > 0, "invalid amount");
+
+        _updatePoolRewardShare(_pid);
+
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = poolUsers[_pid][msg.sender];
+        bool isNew = (user.amount == 0);
+
+        pool.stakeToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+        pool.totalStaked += _amount;
+        if (isNew) {
+            pool.userCount += 1;
+        }
+
+        user.amount += _amount;
+        user.rewardBalance += _getPendingReward(user, pool.accRewardTokenPerShare);
+        user.depositTime = block.timestamp;
+
+        emit Deposit(_pid, msg.sender, _amount);
+    }
+
+    /// Withdraw rewards and/or staked tokens.
+    /// @param _amount The amount of staking tokens to withdraw
+    function withdraw(uint256 _pid, uint256 _amount) external payable {
+        require(_pid < poolCount, "invalid pool id");
+        require(_amount > 0, "invalid amount");
+        uint256 userDepositAmount = getDepositAmount(_pid, msg.sender);
+        require(userDepositAmount >= _amount, "insufficient user deposit");
+        require(stakedBalance(_pid) >= _amount, "insufficient staked balance");
+
+        _updatePoolRewardShare(_pid);
+
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = poolUsers[_pid][msg.sender];
+
+        // uint256 userPendingReward = pendingReward(_pid, msg.sender);
+
+        pool.stakeToken.safeTransferFrom(address(this), address(msg.sender), _amount);
+        pool.totalStaked -= _amount;
+        bool isRemoved = (userDepositAmount == _amount);
+        if (isRemoved) {
+            uint256 userPendingReward = _getPendingReward(user, pool.accRewardTokenPerShare);
+            safeTransferReward(_pid, address(msg.sender), userPendingReward);
+            pool.userCount -= 1;
+            user.amount = 0;
+        } else {
+            user.amount -= _amount;
+            user.rewardBalance = 0;
+        }
+
+        user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
+        // user.depositTime = block.timestamp;
+        emit Withdraw(_pid, msg.sender, _amount);
+    }
+
+    // function harvest(uint256 _pid) public payable {
+    //     UserInfo storage user = poolUsers[_pid][msg.sender];
+
+    //     uint256 userPendingReward = pendingReward(_pid, msg.sender);
+    //     safeTransferReward(_pid, address(msg.sender), user.rewardDebt + userPendingReward);
+    //     user.rewardDebt += userPendingReward;
+    //     user.rewardBalance = 0;
+    //     user.depositTime = block.timestamp;
+    // }
+
+    // View function to see pending Reward on frontend.
+    function pendingReward(uint256 _pid, address _user) public view returns (uint256) {
+        PoolInfo memory pool = poolInfo[_pid];
+        UserInfo memory user = poolUsers[_pid][_user];
+        if (user.amount == 0 || block.timestamp <= user.depositTime) {
+            return 0;
+        }
+
+        uint256 accRewardTokenPerShare = pool.accRewardTokenPerShare;
+        if (block.timestamp > pool.lastRewardTime && pool.totalStaked > 0) {
+            uint256 multiplier = _getMultiplier(_pid, user.depositTime, block.timestamp);
+            uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(TOTAL_ALLOC_POINT);
+            accRewardTokenPerShare += tokenReward.mul(TOTAL_SHARE).div(pool.totalStaked);
+        }
+
+        return _getPendingReward(user, accRewardTokenPerShare);
+    }
+
+    function _getPendingReward(UserInfo memory user, uint256 _accRewardTokenPerShare) public view returns (uint256) {
+        return user.amount.mul(_accRewardTokenPerShare).div(TOTAL_SHARE).add(user.rewardBalance).sub(user.rewardDebt);
+    }
+
     // Return reward multiplier over the given _from to _to block.
     function _getMultiplier(
         uint256 _pid,
@@ -66,125 +160,31 @@ contract ERC20Vault is AdminRole {
         }
     }
 
-    // View function to see pending Reward on frontend.
-    function pendingReward(uint256 _pid, address _user) public view returns (uint256) {
-        PoolInfo memory pool = poolInfo[_pid];
-        UserInfo memory user = poolUsers[_pid][_user];
-        if (user.amount == 0) {
-            return 0;
+    function _updatePoolRewardShare(uint256 _pid) private {
+        require(_pid < poolCount, "invalid pool id");
+
+        PoolInfo storage pool = poolInfo[_pid];
+        if (block.timestamp <= pool.lastRewardTime) {
+            return;
+        }
+        if (pool.totalStaked == 0) {
+            pool.lastRewardTime = block.number;
+            return;
         }
 
-        uint256 accRewardTokenPerShare = pool.accRewardTokenPerShare;
-        if (block.timestamp > pool.startTime && block.timestamp > user.depositTime) {
-            uint256 multiplier = _getMultiplier(_pid, user.depositTime, block.timestamp);
-            uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(TOTAL_ALLOC_POINT);
-            accRewardTokenPerShare += tokenReward.mul(TOTAL_SHARE).div(pool.totalStaked);
-        }
-
-        return user.amount.mul(accRewardTokenPerShare).div(TOTAL_SHARE);
+        uint256 multiplier = _getMultiplier(_pid, pool.lastRewardTime, block.timestamp);
+        uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(TOTAL_ALLOC_POINT);
+        pool.accRewardTokenPerShare += tokenReward.mul(TOTAL_SHARE).div(pool.totalStaked);
+        pool.lastRewardTime = block.timestamp;
     }
-
-    // // Update reward variables of the given pool to be up-to-date.
-    // function updatePool(uint256 _pid) public {
-    //     PoolInfo storage pool = poolInfo[_pid];
-    //     if (block.timestamp <= pool.lastRewardTime) {
-    //         return;
-    //     }
-    //     if (totalStaked == 0) {
-    //         pool.lastRewardTime = block.timestamp;
-    //         return;
-    //     }
-    //     uint256 multiplier = getMultiplier(pool.lastRewardTime, block.timestamp);
-    //     uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(totalAllocPoint);
-    //     pool.accRewardTokenPerShare = pool.accRewardTokenPerShare.add(tokenReward.mul(TOTAL_SHARE).div(totalStaked));
-    //     pool.lastRewardTime = block.timestamp;
-    // }
-
-    // // Update reward variables for all pools. Be careful of gas spending!
-    // function massUpdatePools() public {
-    //     uint256 length = poolInfo.length;
-    //     for (uint256 pid = 0; pid < length; ++pid) {
-    //         updatePool(pid);
-    //     }
-    // }
 
     function getDepositAmount(uint256 _pid, address _user) public view returns (uint256) {
         return poolUsers[_pid][_user].amount;
     }
 
-    /// Deposit staking token into the contract to earn rewards.
-    /// @dev Since this contract needs to be supplied with rewards we are
-    ///  sending the balance of the contract if the pending rewards are higher
-    /// @param _amount The amount of staking tokens to deposit
-    function deposit(uint256 _pid, uint256 _amount) external payable {
-        require(_pid < poolCount, "invalid pool id");
-        require(_amount > 0, "invalid amount");
-
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = poolUsers[_pid][msg.sender];
-        bool isNew = (user.amount == 0);
-        // uint256 finalDepositAmount = 0;
-        // updatePool(_pid);
-        // if (user.amount > 0) {
-        //     uint256 pending = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE).sub(user.rewardDebt);
-        //     if (pending > 0) {
-        //         uint256 currentRewardBalance = rewardBalance();
-        //         if (currentRewardBalance > 0) {
-        //             if (pending > currentRewardBalance) {
-        //                 safeTransferReward(_pid, address(msg.sender), currentRewardBalance);
-        //             } else {
-        //                 safeTransferReward(_pid, address(msg.sender), pending);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // uint256 preStakeBalance = totalStakeTokenBalance();
-        // finalDepositAmount = totalStakeTokenBalance().sub(preStakeBalance);
-
-        // user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
-
-        pool.stakeToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-        pool.totalStaked += _amount;
-        if (isNew) {
-            pool.userCount += 1;
-        }
-
-        user.amount += _amount;
-        user.rewardDebt += pendingReward(_pid, msg.sender);
-        user.depositTime = block.timestamp;
-
-        emit Deposit(_pid, msg.sender, _amount);
+    function stakedBalance(uint256 _pid) public view returns (uint256) {
+        return poolInfo[_pid].stakeToken.balanceOf(address(this));
     }
-
-    // /// Withdraw rewards and/or staked tokens. Pass a 0 amount to withdraw only rewards
-    // /// @param _amount The amount of staking tokens to withdraw
-    // function withdraw(uint256 _amount) external payable {
-    //     PoolInfo storage pool = poolInfo[0];
-    //     UserInfo storage user = pool.users[msg.sender];
-    //     require(user.amount >= _amount, "withdraw: not good");
-    //     updatePool(0);
-    //     uint256 pending = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE).sub(user.rewardDebt);
-    //     if (pending > 0) {
-    //         uint256 currentRewardBalance = rewardBalance();
-    //         if (currentRewardBalance > 0) {
-    //             if (pending > currentRewardBalance) {
-    //                 safeTransferReward(address(msg.sender), currentRewardBalance);
-    //             } else {
-    //                 safeTransferReward(address(msg.sender), pending);
-    //             }
-    //         }
-    //     }
-    //     if (_amount > 0) {
-    //         user.amount = user.amount.sub(_amount);
-    //         pool.stakeToken.safeTransfer(address(msg.sender), _amount);
-    //         totalStaked = totalStaked.sub(_amount);
-    //     }
-
-    //     user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
-
-    //     emit Withdraw(msg.sender, _amount);
-    // }
 
     function rewardBalance(uint256 _pid) public view returns (uint256) {
         return poolInfo[_pid].rewardToken.balanceOf(address(this));
@@ -192,7 +192,7 @@ contract ERC20Vault is AdminRole {
 
     // Deposit Rewards into contract
     function depositRewards(uint256 _pid, uint256 _amount) external {
-        require(_amount > 0, "Deposit value must be greater than 0.");
+        require(_amount > 0, "invalid amount");
         poolInfo[_pid].rewardToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         emit DepositRewards(_pid, _amount);
     }
@@ -212,7 +212,7 @@ contract ERC20Vault is AdminRole {
         uint256 _allocPoint,
         uint256 _startTime,
         uint256 _endTime
-    ) external payable onlyOwner returns (uint256) {
+    ) external payable onlyOwner {
         poolInfo.push(
             PoolInfo({
                 stakeToken: _stakeToken,
@@ -228,8 +228,20 @@ contract ERC20Vault is AdminRole {
         );
 
         poolCount += 1;
+    }
 
-        return poolCount - 1;
+    function updatePool(
+        uint256 _pid,
+        uint256 _allocPoint,
+        uint256 _startTime,
+        uint256 _endTime
+    ) external payable onlyOwner {
+        PoolInfo storage pool = poolInfo[_pid];
+
+        pool.allocPoint = _allocPoint;
+        pool.startTime = _startTime;
+        pool.lastRewardTime = _startTime;
+        pool.endTime = _endTime;
     }
 
     /// @param _rewardUnit The amount of reward tokens to be given per block
