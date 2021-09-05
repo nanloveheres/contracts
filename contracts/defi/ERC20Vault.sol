@@ -105,15 +105,16 @@ contract ERC20Vault is AdminRole {
         pool.stakeToken.safeTransfer(address(msg.sender), _amount);
 
         pool.totalStaked -= _amount;
+        uint256 userPendingReward = _getPendingReward(user, pool.accRewardTokenPerShare);
         bool isRemoved = (userDepositAmount == _amount);
         if (isRemoved) {
-            uint256 userPendingReward = _getPendingReward(user, pool.accRewardTokenPerShare);
             safeTransferReward(_pid, address(msg.sender), userPendingReward);
             pool.userCount -= 1;
             user.amount = 0;
             user.rewardBalance = 0;
         } else {
             user.amount -= _amount;
+            user.rewardBalance = userPendingReward;
         }
 
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
@@ -200,7 +201,7 @@ contract ERC20Vault is AdminRole {
     }
 
     // Deposit Rewards into contract
-    function depositRewards(uint256 _pid, uint256 _amount) external payable{
+    function depositRewards(uint256 _pid, uint256 _amount) external payable {
         require(_amount > 0, "invalid amount");
         poolInfo[_pid].rewardToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         emit DepositRewards(_pid, _amount);
