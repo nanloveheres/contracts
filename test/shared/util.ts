@@ -1,4 +1,5 @@
-import { BigNumber, utils, BigNumberish } from 'ethers'
+import { BigNumber, utils, BigNumberish } from "ethers"
+import { network, ethers } from "hardhat"
 
 export function ether(n: string | number): BigNumber {
     return utils.parseEther(n.toString())
@@ -13,4 +14,8 @@ export function parseUnits(value: string | number, unitName?: BigNumberish): Big
     return utils.parseUnits(value.toString(), unitName)
 }
 
+export async function mineTime(time: number) {
+    await network.provider.send("evm_increaseTime", [time])
+    await network.provider.send("evm_mine")
+}
 // export default utils

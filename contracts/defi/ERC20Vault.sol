@@ -1,14 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import '../utils/AdminRole.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import "../utils/AdminRole.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ERC20Vault is AdminRole {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    
+
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
@@ -18,30 +18,28 @@ contract ERC20Vault is AdminRole {
     // Info of each pool.
     struct PoolInfo {
         IERC20 stakeToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. Rewards to distribute per block.
-        uint256 lastRewardBlock; // Last block number that Rewards distribution occurs.
-        uint256 accRewardTokenPerShare; // Accumulated Rewards per share, times 1e30. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. Rewards to distribute per second.
+        uint256 lastRewardTime; // Last time that Rewards distribution occurs.
+        uint256 accRewardTokenPerShare; // Accumulated Rewards per share, times 1e30 (10**30). See below.
+        uint256 totalStaked;       
+        mapping(address => UserInfo) userInfo;  // Info of each user that stakes LP tokens.
     }
 
     IERC20 public stakeToken;
     IERC20 public rewardToken;
 
-    // Reward tokens created per block.
-    uint256 public rewardPerBlock;
+    // Reward tokens created per second.
+    uint256 public rewardUnit;
 
     // Keep track of number of tokens staked in case the contract earns reflect fees
     uint256 public totalStaked = 0;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
-    // Info of each user that stakes LP tokens.
-    mapping(address => UserInfo) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 private totalAllocPoint = 0;
-    // The block number when Reward mining starts.
-    uint256 public startBlock;
-    // The block number when mining ends.
-    uint256 public bonusEndBlock;
+    uint256 public poolStartTime;
+    uint256 public bonusEndTime;
 
     event Deposit(address indexed user, uint256 amount);
     event DepositRewards(uint256 amount);
@@ -55,32 +53,29 @@ contract ERC20Vault is AdminRole {
     constructor(
         IERC20 _stakeToken,
         IERC20 _rewardToken,
-        uint256 _rewardPerBlock,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _rewardUnit,
+        uint256 _poolStartTime,
+        uint256 _bonusEndTime
     ) {
         stakeToken = _stakeToken;
         rewardToken = _rewardToken;
-        rewardPerBlock = _rewardPerBlock;
-        startBlock = _startBlock;
-        bonusEndBlock = _bonusEndBlock;
+        rewardUnit = _rewardUnit;
+        poolStartTime = _poolStartTime;
+        bonusEndTime = _bonusEndTime;
 
-        // staking pool
-        poolInfo.push(
-            PoolInfo({stakeToken: _stakeToken, allocPoint: 1000, lastRewardBlock: startBlock, accRewardTokenPerShare: 0})
-        );
+        poolInfo.push(PoolInfo({ stakeToken: _stakeToken, allocPoint: 1000, lastRewardTime: poolStartTime, accRewardTokenPerShare: 0, totalStaked: 0 }));
 
         totalAllocPoint = 1000;
     }
 
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        if (_to <= bonusEndBlock) {
+        if (_to <= bonusEndTime) {
             return _to.sub(_from);
-        } else if (_from >= bonusEndBlock) {
+        } else if (_from >= bonusEndTime) {
             return 0;
         } else {
-            return bonusEndBlock.sub(_from);
+            return bonusEndTime.sub(_from);
         }
     }
 
@@ -89,9 +84,9 @@ contract ERC20Vault is AdminRole {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[_user];
         uint256 accRewardTokenPerShare = pool.accRewardTokenPerShare;
-        if (block.number > pool.lastRewardBlock && totalStaked != 0) {
-            uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 tokenReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        if (block.timestamp > pool.lastRewardTime && totalStaked != 0) {
+            uint256 multiplier = getMultiplier(pool.lastRewardTime, block.timestamp);
+            uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(totalAllocPoint);
             accRewardTokenPerShare = accRewardTokenPerShare.add(tokenReward.mul(1e30).div(totalStaked));
         }
         return user.amount.mul(accRewardTokenPerShare).div(1e30).sub(user.rewardDebt);
@@ -100,17 +95,17 @@ contract ERC20Vault is AdminRole {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
+        if (block.timestamp <= pool.lastRewardTime) {
             return;
         }
         if (totalStaked == 0) {
-            pool.lastRewardBlock = block.number;
+            pool.lastRewardTime = block.timestamp;
             return;
         }
-        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 tokenReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        uint256 multiplier = getMultiplier(pool.lastRewardTime, block.timestamp);
+        uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(totalAllocPoint);
         pool.accRewardTokenPerShare = pool.accRewardTokenPerShare.add(tokenReward.mul(1e30).div(totalStaked));
-        pool.lastRewardBlock = block.number;
+        pool.lastRewardTime = block.timestamp;
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -160,7 +155,7 @@ contract ERC20Vault is AdminRole {
     function withdraw(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[msg.sender];
-        require(user.amount >= _amount, 'withdraw: not good');
+        require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
         uint256 pending = user.amount.mul(pool.accRewardTokenPerShare).div(1e30).sub(user.rewardDebt);
         if (pending > 0) {
@@ -192,7 +187,7 @@ contract ERC20Vault is AdminRole {
 
     // Deposit Rewards into contract
     function depositRewards(uint256 _amount) external {
-        require(_amount > 0, 'Deposit value must be greater than 0.');
+        require(_amount > 0, "Deposit value must be greater than 0.");
         rewardToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         emit DepositRewards(_amount);
     }
@@ -205,15 +200,15 @@ contract ERC20Vault is AdminRole {
 
     /* Admin Functions */
 
-    /// @param _rewardPerBlock The amount of reward tokens to be given per block
-    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyOwner {
-        rewardPerBlock = _rewardPerBlock;
+    /// @param _rewardUnit The amount of reward tokens to be given per block
+    function setRewardUnit(uint256 _rewardUnit) external onlyOwner {
+        rewardUnit = _rewardUnit;
     }
 
-    /// @param  _bonusEndBlock The block when rewards will end
-    function setBonusEndBlock(uint256 _bonusEndBlock) external onlyOwner {
-        require(_bonusEndBlock > bonusEndBlock, 'new bonus end block must be greater than current');
-        bonusEndBlock = _bonusEndBlock;
+    /// @param  _bonusEndTime The block when rewards will end
+    function setBonusEndTime(uint256 _bonusEndTime) external onlyOwner {
+        require(_bonusEndTime > bonusEndTime, "new bonus end block must be greater than current");
+        bonusEndTime = _bonusEndTime;
     }
 
     /// @dev Obtain the stake token fees (if any) earned by reflect token
@@ -250,7 +245,7 @@ contract ERC20Vault is AdminRole {
 
     // Withdraw reward. EMERGENCY ONLY.
     function emergencyRewardWithdraw(uint256 _amount) external onlyOwner {
-        require(_amount <= rewardBalance(), 'not enough rewards');
+        require(_amount <= rewardBalance(), "not enough rewards");
         // Withdraw rewards
         safeTransferReward(address(msg.sender), _amount);
         emit EmergencyRewardWithdraw(msg.sender, _amount);
