@@ -4,6 +4,7 @@ import "../utils/AdminRole.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "hardhat/console.sol";
 
 contract ERC20Vault is AdminRole {
     using SafeMath for uint256;
@@ -59,10 +60,13 @@ contract ERC20Vault is AdminRole {
         require(_pid < poolCount, "invalid pool id");
         require(_amount > 0, "invalid amount");
 
-        _updatePoolRewardShare(_pid);
-
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = poolUsers[_pid][msg.sender];
+        _updatePoolRewardShare(_pid);
+        uint256 pendingRewardBalance = _getPendingReward(user, pool.accRewardTokenPerShare);
+
+        console.log("pendingRewardBalance: %s", pendingRewardBalance);
+
         bool isNew = (user.amount == 0);
 
         pool.stakeToken.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -72,8 +76,9 @@ contract ERC20Vault is AdminRole {
         }
 
         user.amount += _amount;
-        user.rewardBalance += _getPendingReward(user, pool.accRewardTokenPerShare);
-        user.depositTime = block.timestamp;
+        user.rewardBalance = pendingRewardBalance;
+        user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
+        // user.depositTime = block.timestamp;
 
         emit Deposit(_pid, msg.sender, _amount);
     }
@@ -94,7 +99,11 @@ contract ERC20Vault is AdminRole {
 
         // uint256 userPendingReward = pendingReward(_pid, msg.sender);
 
-        pool.stakeToken.safeTransferFrom(address(this), address(msg.sender), _amount);
+        console.log("vault  : %s", pool.stakeToken.balanceOf(address(this)));
+        console.log("_amount: %s", _amount);
+
+        pool.stakeToken.safeTransfer(address(msg.sender), _amount);
+
         pool.totalStaked -= _amount;
         bool isRemoved = (userDepositAmount == _amount);
         if (isRemoved) {
@@ -102,9 +111,9 @@ contract ERC20Vault is AdminRole {
             safeTransferReward(_pid, address(msg.sender), userPendingReward);
             pool.userCount -= 1;
             user.amount = 0;
+            user.rewardBalance = 0;
         } else {
             user.amount -= _amount;
-            user.rewardBalance = 0;
         }
 
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
@@ -132,7 +141,7 @@ contract ERC20Vault is AdminRole {
 
         uint256 accRewardTokenPerShare = pool.accRewardTokenPerShare;
         if (block.timestamp > pool.lastRewardTime && pool.totalStaked > 0) {
-            uint256 multiplier = _getMultiplier(_pid, user.depositTime, block.timestamp);
+            uint256 multiplier = _getMultiplier(_pid, pool.lastRewardTime, block.timestamp);
             uint256 tokenReward = multiplier.mul(rewardUnit).mul(pool.allocPoint).div(TOTAL_ALLOC_POINT);
             accRewardTokenPerShare += tokenReward.mul(TOTAL_SHARE).div(pool.totalStaked);
         }
@@ -168,7 +177,7 @@ contract ERC20Vault is AdminRole {
             return;
         }
         if (pool.totalStaked == 0) {
-            pool.lastRewardTime = block.number;
+            pool.lastRewardTime = block.timestamp;
             return;
         }
 
@@ -191,7 +200,7 @@ contract ERC20Vault is AdminRole {
     }
 
     // Deposit Rewards into contract
-    function depositRewards(uint256 _pid, uint256 _amount) external {
+    function depositRewards(uint256 _pid, uint256 _amount) external payable{
         require(_amount > 0, "invalid amount");
         poolInfo[_pid].rewardToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         emit DepositRewards(_pid, _amount);

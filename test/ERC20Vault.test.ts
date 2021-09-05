@@ -92,7 +92,7 @@ describe("ERC20Vault", () => {
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
         console.info(`pendingReward (bob, after 24h): ${toEther(pendingRewardBob)}`)
 
-        await mineTime(3600 * 23 * 30)
+        await mineTime(3600 * 24 * 29)
         pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (alice, after 30d): ${toEther(pendingRewardAlice)}`)
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
@@ -130,13 +130,160 @@ describe("ERC20Vault", () => {
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
         console.info(`pendingReward (bob, after 1h): ${toEther(pendingRewardBob)}`)
 
-        await mineTime(3600 * 23)
+        await mineTime(3600)
         pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
-        console.info(`pendingReward (alice, after 24h): ${toEther(pendingRewardAlice)}`)
+        console.info(`pendingReward (alice, after 2h): ${toEther(pendingRewardAlice)}`)
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
-        console.info(`pendingReward (bob, after 24h): ${toEther(pendingRewardBob)}`)
+        console.info(`pendingReward (bob, after 2h): ${toEther(pendingRewardBob)}`)
 
-        await mineTime(3600 * 23 * 30)
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 3h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 3h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 7)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 10h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 10h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 24 * 29)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 30d): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 30d): ${toEther(pendingRewardBob)}`)
+
+        expect(pendingRewardAlice).to.gt(0)
+        expect(pendingRewardBob).to.gt(0)
+    })
+
+
+    it("Two deposits (+ amount) ", async () => {
+        await stakeToken.transfer(alice.address, ether(1000))
+        await stakeToken.connect(alice).approve(vault.address, ether(1000))
+        await vault.connect(alice).deposit(POOL_ID, ether(1000))
+
+        await stakeToken.transfer(bob.address, ether(4000))
+        await stakeToken.connect(bob).approve(vault.address, ether(4000))
+
+        const blockNumber = await ethers.provider.getBlockNumber()
+        const block = await ethers.provider.getBlock(blockNumber)
+        const startTime = block.timestamp
+        const endTime = block.timestamp + 3600 * 24 * 100
+        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+
+        await mineTime(3600)
+        console.info(`bob adds 2000`)
+        await vault.connect(bob).deposit(POOL_ID, ether(2000))
+
+        let pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, begin): ${toEther(pendingRewardAlice)}`)
+        let pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, begin): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 1h): ${toEther(pendingRewardBob)}`)
+
+        console.info(`bob adds 2000`)
+        await vault.connect(bob).deposit(POOL_ID, ether(2000))
+
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 1h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 2h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 2h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 3h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 3h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 7)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 10h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 10h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 24 * 29)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 30d): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 30d): ${toEther(pendingRewardBob)}`)
+
+        expect(pendingRewardAlice).to.gt(0)
+        expect(pendingRewardBob).to.gt(0)
+    })
+
+    it("Two deposits (- amount) ", async () => {
+        // await rewardToken.transfer(vault.address, ether(100000000))
+        await rewardToken.approve(vault.address, ether(100000000))
+        await vault.depositRewards(POOL_ID,  ether(100000000))
+
+        await stakeToken.transfer(alice.address, ether(1000))
+        await stakeToken.connect(alice).approve(vault.address, ether(1000))
+        await vault.connect(alice).deposit(POOL_ID, ether(1000))
+
+        await stakeToken.transfer(bob.address, ether(4000))
+        await stakeToken.connect(bob).approve(vault.address, ether(4000))
+
+        const blockNumber = await ethers.provider.getBlockNumber()
+        const block = await ethers.provider.getBlock(blockNumber)
+        const startTime = block.timestamp
+        const endTime = block.timestamp + 3600 * 24 * 100
+        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+
+        await mineTime(3600)
+        console.info(`bob adds 2000`)
+        await vault.connect(bob).deposit(POOL_ID, ether(2000))
+
+        let pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, begin): ${toEther(pendingRewardAlice)}`)
+        let pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, begin): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 1h): ${toEther(pendingRewardBob)}`)
+
+        console.info(`bob removes 1000`)
+        await vault.connect(bob).withdraw(POOL_ID, ether(1000))
+        
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 1h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 2h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 2h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 3h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 3h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 7)
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 10h): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 10h): ${toEther(pendingRewardBob)}`)
+
+        await mineTime(3600 * 24 * 29)
         pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (alice, after 30d): ${toEther(pendingRewardAlice)}`)
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
