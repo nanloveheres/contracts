@@ -259,6 +259,8 @@ describe("ERC20Vault", () => {
 
         console.info(`bob removes 1000`)
         await vault.connect(bob).withdraw(POOL_ID, ether(1000))
+        const balOfBob = await stakeToken.balanceOf(bob.address)
+        expect(balOfBob).to.equal(ether(3000))
         
         pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
@@ -291,5 +293,20 @@ describe("ERC20Vault", () => {
 
         expect(pendingRewardAlice).to.gt(0)
         expect(pendingRewardBob).to.gt(0)
+        
+        await vault.connect(alice).withdraw(POOL_ID, ether(1000))
+        await vault.connect(bob).withdraw(POOL_ID, ether(1000))
+
+        pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (alice, after 30d): ${toEther(pendingRewardAlice)}`)
+        pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
+        console.info(`pendingReward (bob, after 30d): ${toEther(pendingRewardBob)}`)
+
+        const rewardAlice = await rewardToken.balanceOf(alice.address)
+        console.info(`reward (alice): ${toEther(rewardAlice)}`)
+        const rewardBob = await rewardToken.balanceOf(bob.address)
+        console.info(`reward (bob): ${toEther(rewardBob)}`)
+        expect(rewardAlice).to.gt(0)
+        expect(rewardBob).to.gt(0)
     })
 })
