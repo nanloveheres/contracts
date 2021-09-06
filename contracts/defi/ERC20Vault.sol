@@ -79,6 +79,7 @@ contract ERC20Vault is AdminRole {
         user.amount += _amount;
         user.rewardBalance = pendingRewardBalance;
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
+        user.depositTime = block.timestamp;
 
         emit Deposit(_pid, msg.sender, _amount);
     }
@@ -129,12 +130,12 @@ contract ERC20Vault is AdminRole {
             pool.userCount -= 1;
             user.amount = 0;
             user.rewardBalance = 0;
+            user.rewardTime = block.timestamp;
         } else {
             user.amount -= _amount;
             user.rewardBalance = userPendingReward;
         }
 
-        user.rewardTime = block.timestamp;
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
         emit Withdraw(_pid, msg.sender, _amount);
     }
