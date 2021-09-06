@@ -34,6 +34,50 @@ describe("ERC20Vault", () => {
         await vault.newPool(stakeToken.address, rewardToken.address, REWARD_UNIT, share, startTime, endTime)
     })
 
+    it("Is valid pool", async () => {
+        const blockNumber = await ethers.provider.getBlockNumber()
+        const block = await ethers.provider.getBlock(blockNumber)
+        const now = block.timestamp
+
+        const pool = await vault.poolInfo(POOL_ID)
+        expect(pool.startTime, "start time < now").to.lt(now)
+        expect(pool.userCount, "user count = 0").to.equal(0)
+        // console.info(`pool: `, pool)
+
+        expect(await vault.isValidPool(POOL_ID), "pool 0 is valid").to.eq(true)
+        await expect(vault.isValidPool(1), "pool 1 isn't valid").to.be.reverted
+
+        await vault.updatePool(POOL_ID, REWARD_UNIT, 10000, 0, now + 5)
+        expect(await vault.isValidPool(POOL_ID), "pool 0 is valid now").to.eq(true)
+        await mineTime(5)
+        expect(await vault.isValidPool(POOL_ID), "pool 0 isn't valid after ss").to.eq(false)
+    })
+
+    it("Adds new pool", async () => {
+        const blockNumber = await ethers.provider.getBlockNumber()
+        const block = await ethers.provider.getBlock(blockNumber)
+        const beginTime = block.timestamp
+        const endTime = block.timestamp + 3600
+
+        expect(await vault.poolCount(), "pool count = 1").to.equal(1)
+        await vault.newPool(stakeToken.address, rewardToken.address, REWARD_UNIT, 100, beginTime, endTime)
+        expect(await vault.poolCount(), "pool count = 2").to.equal(2)
+
+        let pool = await vault.poolInfo(1)
+        expect(pool.startTime, "beginTime").to.eq(beginTime)
+        expect(pool.endTime, "endTime").to.eq(endTime)
+        expect(pool.userCount, "user count = 0").to.equal(0)
+
+        expect(await vault.isValidPool(POOL_ID), "pool 0 is valid").to.eq(true)
+        expect(await vault.isValidPool(1), "pool 1 is valid").to.eq(true)
+
+        await stakeToken.transfer(alice.address, ether(1000))
+        await stakeToken.connect(alice).approve(vault.address, ether(1000))
+        await vault.connect(alice).deposit(1, ether(1000))
+        pool = await vault.poolInfo(1)
+        expect(pool.userCount, "user count = 1").to.equal(1)
+    })
+
     it("Check stake token balance", async () => {
         await stakeToken.transfer(alice.address, ether(1000))
         expect(await stakeToken.balanceOf(alice.address)).to.eq(ether(1000))
@@ -321,7 +365,7 @@ describe("ERC20Vault", () => {
         await mineTime(3600)
         pendingReward = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (after 1h): ${toEther(pendingReward)}`)
-        
+
         console.info(`withdraw: 500`)
         await vault.connect(alice).withdraw(POOL_ID, ether(500))
         pendingReward = await vault.pendingReward(POOL_ID, alice.address)
@@ -352,5 +396,4 @@ describe("ERC20Vault", () => {
 
         expect(pendingReward).to.gt(0)
     })
-
 })

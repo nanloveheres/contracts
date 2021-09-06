@@ -58,6 +58,7 @@ contract ERC20Vault is AdminRole {
     function deposit(uint256 _pid, uint256 _amount) external payable {
         require(_pid < poolCount, "invalid pool id");
         require(_amount > 0, "invalid amount");
+        require(isValidPool(_pid), "pool is invalid");
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = poolUsers[_pid][msg.sender];
@@ -95,6 +96,7 @@ contract ERC20Vault is AdminRole {
     function _withdraw(uint256 _pid, uint256 _amount) private {
         require(_pid < poolCount, "invalid pool id");
         require(_amount > 0, "invalid amount");
+
         uint256 userDepositAmount = stakedBalanceOfUser(_pid, msg.sender);
         console.log("userDepositAmount (ether) : %s", userDepositAmount);
         require(userDepositAmount >= _amount, "insufficient user deposit");
@@ -140,7 +142,6 @@ contract ERC20Vault is AdminRole {
 
         uint256 userPendingReward = pendingReward(_pid, msg.sender);
         _safeTransferReward(_pid, address(msg.sender), userPendingReward);
-        // user.rewardDebt += userPendingReward;
         user.rewardBalance = 0;
     }
 
@@ -212,6 +213,11 @@ contract ERC20Vault is AdminRole {
     }
 
     /* View Functions */
+
+    function isValidPool(uint256 _pid) public view returns (bool) {
+        PoolInfo memory pool = poolInfo[_pid];
+        return pool.endTime > block.timestamp && pool.rewardUnit > 0;
+    }
 
     function stakedBalanceOfUser(uint256 _pid, address _user) public view returns (uint256) {
         return poolUsers[_pid][_user].amount;
