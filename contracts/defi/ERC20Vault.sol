@@ -19,6 +19,7 @@ contract ERC20Vault is AdminRole {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt or paid reward.
         uint256 rewardBalance;
+        uint256 rewardTime;
         uint256 depositTime;
     }
 
@@ -133,23 +134,28 @@ contract ERC20Vault is AdminRole {
             user.rewardBalance = userPendingReward;
         }
 
+        user.rewardTime = block.timestamp;
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
         emit Withdraw(_pid, msg.sender, _amount);
     }
 
     function harvest(uint256 _pid) external payable {
+        _updatePoolRewardShare(_pid);
+        PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = poolUsers[_pid][msg.sender];
 
         uint256 userPendingReward = pendingReward(_pid, msg.sender);
         _safeTransferReward(_pid, address(msg.sender), userPendingReward);
         user.rewardBalance = 0;
+        user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(TOTAL_SHARE);
+        user.rewardTime = block.timestamp;
     }
 
     // View function to see pending Reward on frontend.
     function pendingReward(uint256 _pid, address _user) public view returns (uint256) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo memory user = poolUsers[_pid][_user];
-        if (user.amount == 0 || block.timestamp <= user.depositTime) {
+        if (user.amount == 0 || block.timestamp <= user.depositTime || block.timestamp <= user.rewardTime) {
             return 0;
         }
 
