@@ -14,6 +14,7 @@ describe("ERC20Vault", () => {
     let vault: Contract
 
     const POOL_ID = 0
+    const REWARD_UNIT = ether(1)
 
     beforeEach(async () => {
         ;[owner, alice, bob] = await ethers.getSigners()
@@ -24,15 +25,13 @@ describe("ERC20Vault", () => {
         rewardToken = await RewardToken.deploy()
         vault = await ERC20Vault.deploy()
 
-        const rewardUnit = ether(1)
         const blockNumber = await ethers.provider.getBlockNumber()
         const block = await ethers.provider.getBlock(blockNumber)
         const startTime = block.timestamp
         const endTime = block.timestamp + 3600 * 24 * 100
         const share = 10000
 
-        await vault.setRewardUnit(rewardUnit)
-        await vault.newPool(stakeToken.address, rewardToken.address, share, startTime, endTime)
+        await vault.newPool(stakeToken.address, rewardToken.address, REWARD_UNIT, share, startTime, endTime)
     })
 
     it("Check stake token balance", async () => {
@@ -73,7 +72,7 @@ describe("ERC20Vault", () => {
         const block = await ethers.provider.getBlock(blockNumber)
         const startTime = block.timestamp
         const endTime = block.timestamp + 3600 * 24 * 100
-        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+        await vault.updatePool(POOL_ID, REWARD_UNIT, 10000, startTime, endTime)
 
         let pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (alice, begin): ${toEther(pendingRewardAlice)}`)
@@ -114,7 +113,7 @@ describe("ERC20Vault", () => {
         const block = await ethers.provider.getBlock(blockNumber)
         const startTime = block.timestamp
         const endTime = block.timestamp + 3600 * 24 * 100
-        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+        await vault.updatePool(POOL_ID, REWARD_UNIT, 10000, startTime, endTime)
 
         await mineTime(3600)
         await vault.connect(bob).deposit(POOL_ID, ether(2000))
@@ -158,7 +157,6 @@ describe("ERC20Vault", () => {
         expect(pendingRewardBob).to.gt(0)
     })
 
-
     it("Two deposits (+ amount) ", async () => {
         await stakeToken.transfer(alice.address, ether(1000))
         await stakeToken.connect(alice).approve(vault.address, ether(1000))
@@ -171,7 +169,7 @@ describe("ERC20Vault", () => {
         const block = await ethers.provider.getBlock(blockNumber)
         const startTime = block.timestamp
         const endTime = block.timestamp + 3600 * 24 * 100
-        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+        await vault.updatePool(POOL_ID, REWARD_UNIT, 10000, startTime, endTime)
 
         await mineTime(3600)
         console.info(`bob adds 2000`)
@@ -227,7 +225,7 @@ describe("ERC20Vault", () => {
     it("Two deposits (- amount) ", async () => {
         // await rewardToken.transfer(vault.address, ether(100000000))
         await rewardToken.approve(vault.address, ether(100000000))
-        await vault.depositRewards(POOL_ID,  ether(100000000))
+        await vault.depositReward(POOL_ID, ether(100000000))
 
         await stakeToken.transfer(alice.address, ether(1000))
         await stakeToken.connect(alice).approve(vault.address, ether(1000))
@@ -240,7 +238,7 @@ describe("ERC20Vault", () => {
         const block = await ethers.provider.getBlock(blockNumber)
         const startTime = block.timestamp
         const endTime = block.timestamp + 3600 * 24 * 100
-        await vault.updatePool(POOL_ID, 10000, startTime, endTime)
+        await vault.updatePool(POOL_ID, REWARD_UNIT, 10000, startTime, endTime)
 
         await mineTime(3600)
         console.info(`bob adds 2000`)
@@ -261,7 +259,7 @@ describe("ERC20Vault", () => {
         await vault.connect(bob).withdraw(POOL_ID, ether(1000))
         const balOfBob = await stakeToken.balanceOf(bob.address)
         expect(balOfBob).to.equal(ether(3000))
-        
+
         pendingRewardAlice = await vault.pendingReward(POOL_ID, alice.address)
         console.info(`pendingReward (alice, after 1h): ${toEther(pendingRewardAlice)}`)
         pendingRewardBob = await vault.pendingReward(POOL_ID, bob.address)
@@ -293,7 +291,7 @@ describe("ERC20Vault", () => {
 
         expect(pendingRewardAlice).to.gt(0)
         expect(pendingRewardBob).to.gt(0)
-        
+
         await vault.connect(alice).withdraw(POOL_ID, ether(1000))
         await vault.connect(bob).withdraw(POOL_ID, ether(1000))
 
@@ -309,4 +307,50 @@ describe("ERC20Vault", () => {
         expect(rewardAlice).to.gt(0)
         expect(rewardBob).to.gt(0)
     })
+
+    it("Deposit & Withdraw", async () => {
+        await rewardToken.approve(vault.address, ether(100000000))
+        await vault.depositReward(POOL_ID, ether(100000000))
+
+        await stakeToken.transfer(alice.address, ether(1000))
+        await stakeToken.connect(alice).approve(vault.address, ether(1000))
+        await vault.connect(alice).deposit(POOL_ID, ether(1000))
+
+        let pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (begin): ${toEther(pendingReward)}`)
+        await mineTime(3600)
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (after 1h): ${toEther(pendingReward)}`)
+        
+        console.info(`withdraw: 500`)
+        await vault.connect(alice).withdraw(POOL_ID, ether(500))
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward: ${toEther(pendingReward)}`)
+
+        await mineTime(3600)
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (after 1h): ${toEther(pendingReward)}`)
+
+        console.info(`withdraw: all`)
+        await vault.connect(alice).withdrawAll(POOL_ID)
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward: ${toEther(pendingReward)}`)
+
+        await mineTime(3600)
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (after 1h): ${toEther(pendingReward)}`)
+
+        console.info(`deposit: 100`)
+        await stakeToken.connect(alice).approve(vault.address, ether(1000))
+        await vault.connect(alice).deposit(POOL_ID, ether(100))
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward: ${toEther(pendingReward)}`)
+
+        await mineTime(3600)
+        pendingReward = await vault.pendingReward(POOL_ID, alice.address)
+        console.info(`pendingReward (after 1h): ${toEther(pendingReward)}`)
+
+        expect(pendingReward).to.gt(0)
+    })
+
 })
