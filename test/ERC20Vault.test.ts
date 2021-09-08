@@ -470,6 +470,5 @@ describe("ERC20Vault", () => {
         console.info(`reward (bob): ${toEther(rewardBob)}`)
         expect(rewardAlice).to.gt(0)
         expect(rewardBob).to.gt(0)
-
     })
 })

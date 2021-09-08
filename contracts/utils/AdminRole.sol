@@ -11,7 +11,10 @@ abstract contract AdminRole is AccessControl {
     event AdminAdded(address indexed account);
     event AdminRemoved(address indexed account);
 
+    address public owner;
+    
     constructor() {
+        owner = msg.sender;
         _setupRole(OWNER_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);

@@ -1,12 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "../utils/AdminRole.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
+import "../utils/AdminRole.sol";
 
-contract ERC20Vault is AdminRole {
+contract ERC20Vault is AdminRole, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -56,7 +58,7 @@ contract ERC20Vault is AdminRole {
     /// Deposit staking token into the contract to earn rewards.
     /// @dev Since this contract needs to be supplied with rewards we are sending the balance of the contract if the pending rewards are higher
     /// @param _amount The amount of staking tokens to deposit
-    function deposit(uint256 _pid, uint256 _amount) external payable {
+    function deposit(uint256 _pid, uint256 _amount) external payable nonReentrant{
         require(_pid < poolCount, "invalid pool id");
         require(_amount > 0, "invalid amount");
         require(isValidPool(_pid), "pool is invalid");
@@ -86,12 +88,12 @@ contract ERC20Vault is AdminRole {
 
     /// Withdraw reward and/or staked tokens.
     /// @param _amount The amount of staking tokens to withdraw
-    function withdraw(uint256 _pid, uint256 _amount) external payable {
+    function withdraw(uint256 _pid, uint256 _amount) external payable nonReentrant{
         _withdraw(_pid, _amount);
     }
 
     /// Withdraw all .
-    function withdrawAll(uint256 _pid) external payable {
+    function withdrawAll(uint256 _pid) external payable nonReentrant {
         _withdraw(_pid, stakedBalanceOfUser(_pid, msg.sender));
     }
 
@@ -140,7 +142,7 @@ contract ERC20Vault is AdminRole {
         emit Withdraw(_pid, msg.sender, _amount);
     }
 
-    function harvest(uint256 _pid) external payable {
+    function harvest(uint256 _pid) external payable nonReentrant{
         _updatePoolRewardShare(_pid);
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = poolUsers[_pid][msg.sender];
@@ -217,6 +219,18 @@ contract ERC20Vault is AdminRole {
         require(_amount > 0, "invalid amount");
         poolInfo[_pid].rewardToken.safeTransfer(_to, _amount);
         emit WithdrawReward(_pid, _to, _amount);
+    }
+
+    // Update reward variables for all pools. Be careful of gas spending!
+    function massUpdatePools() public {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; ++pid) {
+            _updatePoolRewardShare(pid);
+        }
+    }
+
+    function updatePoolRewardShare(uint256 _pid) public {
+        _updatePoolRewardShare(_pid);
     }
 
     /* View Functions */
