@@ -256,7 +256,7 @@ contract MasterChef is AdminRole, ReentrancyGuard, Pausable {
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant{
+    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant {
         require(_pid < poolInfo.length, "invalid pid");
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
