@@ -225,8 +225,6 @@ contract MasterChef is AdminRole, ReentrancyGuard, Pausable {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.timestamp);
         uint256 cakeReward = multiplier.mul(pool.rewardUnit).mul(pool.allocPoint).div(totalAllocPoint);
-        // cake.mint(devaddr, cakeReward.div(10));
-        // cake.mint(address(syrup), cakeReward);
         pool.accRewardPerShare = pool.accRewardPerShare.add(cakeReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.timestamp;
     }

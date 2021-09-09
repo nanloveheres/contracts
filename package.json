@@ -21,10 +21,10 @@
     "hardhat:mainnet": "hardhat --network mainnet",
     "prepublishOnly": "yarn test",
     "deploy": "hardhat run scripts/deploy.ts --network",
-    "deploy-bsctest": "hardhat run scripts/deploy.js --network bsctest",
-    "deploy-ropsten": "hardhat run scripts/deploy.js --network ropsten",
-    "deploy-heco": "hardhat run scripts/deploy.js --network heco",
-    "verify": "hardhat verify --network"
+    "deploy-bsctest": "hardhat run scripts/deploy.ts --network bsctest",
+    "deploy-ropsten": "hardhat run scripts/deploy.ts --network ropsten",
+    "deploy-heco": "hardhat run scripts/deploy.ts --network heco",
+    "verify": "hardhat verify:code --network"
   },
   "author": "",
   "license": "MIT",
