@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "../utils/AdminRole.sol";
 
 interface IMigratorChef {
@@ -272,8 +272,8 @@ contract MasterChef is AdminRole, ReentrancyGuard, Pausable {
             if ((block.timestamp - user.depositTime) < 3 days) {
                 withdrawalFee = (_amount * WITHDRAWAL_FEE_RATE) / TOTAL_PERCENT;
             }
-            console.log("withdrawal fee: %s", withdrawalFee);
-            console.log("withdraw amount: %s", _amount - withdrawalFee);
+            // console.log("withdrawal fee: %s", withdrawalFee);
+            // console.log("withdraw amount: %s", _amount - withdrawalFee);
             pool.stakeToken.safeTransfer(address(msg.sender), _amount - withdrawalFee);
             pool.stakeToken.safeTransfer(owner, withdrawalFee);
         }

@@ -12,6 +12,7 @@
     "pretest": "# yarn compile",
     "test": "hardhat test",
     "test-erc20": "hardhat test test/ERC20Token.test.ts",
+    "test-reward": "hardhat test test/RewardToken.test.ts",
     "test-vault": "hardhat test test/ERC20Vault.test.ts",
     "test-chef": "hardhat test test/MasterChef.test.ts",
     "hardhat:node": "hardhat node --hostname 0.0.0.0",
@@ -24,7 +25,9 @@
     "deploy-bsctest": "hardhat run scripts/deploy.ts --network bsctest",
     "deploy-ropsten": "hardhat run scripts/deploy.ts --network ropsten",
     "deploy-heco": "hardhat run scripts/deploy.ts --network heco",
-    "verify": "hardhat verify:code --network"
+    "verify": "hardhat verify:code --network",
+    "flatten": "hardhat flatten contracts/defi/MasterChef.sol > flatten/MasterChef.sol",
+    "flatten-dpn": "hardhat flatten contracts/token/RewardToken.sol > flatten/RewardToken.sol"
   },
   "author": "",
   "license": "MIT",
@@ -38,6 +41,7 @@
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.12.2",
     "chai": "^4.3.4",
+    "crypto": "^1.0.1",
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.3.1",

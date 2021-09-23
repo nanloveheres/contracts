@@ -42,7 +42,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 
 task("verify:code", "Verify contract code", async (args, hre) => {
     const encodedArgs = `0x${fs.readFileSync("artifacts/MasterChef.args")}`
-    const constructorArguments = utils.defaultAbiCoder.decode([ "address", "uint256", "uint256" ], encodedArgs);
+    const constructorArguments = utils.defaultAbiCoder.decode(["address", "uint256", "uint256"], encodedArgs)
     await hre.run("verify:verify", {
         address: fs.readFileSync("artifacts/MasterChef.address").toString(),
         constructorArguments
