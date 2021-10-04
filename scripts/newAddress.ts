@@ -22,7 +22,7 @@ async function main(): Promise<void> {
 }
 
 const isFavorite = (address: string): boolean => {
-    return address.endsWith("888888")
+    return address.toLowerCase().endsWith("eeeee")
 }
 
 main()
