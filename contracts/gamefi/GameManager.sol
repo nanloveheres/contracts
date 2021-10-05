@@ -5,36 +5,30 @@ import "./IManager.sol";
 import "../utils/AdminRole.sol";
 
 contract GameManager is IManager, AdminRole {
-    // bytes32 public constant BATTLE_ROLE = keccak256("BATTLE");
-    // bytes32 public constant EVOLVER_ROLE = keccak256("EVOLVER");
-    // bytes32 public constant MARKET_ROLE = keccak256("MARKET");
-    // bytes32 public constant FARM_ROLE = keccak256("FARM");
-
     mapping(uint256 => uint256) public timesBattleMap;
     mapping(string => uint256) public propsU256;
     address _feeAddress = address(this);
 
     constructor() {
         _newRole("BATTLE");
-        _newRole("EVOLVER");
+        _newRole("SPAWN");
         _newRole("MARKET");
         _newRole("FARM");
-        // _setupRole(BATTLE_ROLE, msg.sender);
-        // _setupRole(EVOLVER_ROLE, msg.sender);
-        // _setupRole(MARKET_ROLE, msg.sender);
-        // _setupRole(FARM_ROLE, msg.sender);
-        // _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
-        // _setRoleAdmin(EVOLVER_ROLE, OWNER_ROLE);
-        // _setRoleAdmin(MARKET_ROLE, OWNER_ROLE);
-        // _setRoleAdmin(FARM_ROLE, OWNER_ROLE);
+        propsU256["feeMarketRate"] = 300; //3%
+        propsU256["divPercent"] = 10000;
+        propsU256["feeLayEgg"] = 1000 ether;
+        propsU256["feeChangeTribe"] = 1 ether;
+        propsU256["feeUpgradeGeneration"] = 500 ether;
+        propsU256["feeEvolve"] = 6000 ether;
+        propsU256["loseRate"] = 300;
     }
 
     function battlefields(address _address) external view override returns (bool) {
         return isRole("BATTLE", _address);
     }
 
-    function evolvers(address _address) external view override returns (bool) {
-        return isRole("EVOLVER", _address);
+    function spawners(address _address) external view override returns (bool) {
+        return isRole("SPAWN", _address);
     }
 
     function markets(address _address) external view override returns (bool) {

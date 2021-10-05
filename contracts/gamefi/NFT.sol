@@ -23,16 +23,15 @@ contract NFT is ERC721 {
     }
 
     event LayEgg(uint256 indexed tokenId, address buyer);
-    event Evolve(uint256 indexed tokenId, uint256 dna);
-    event Buy(uint256 indexed tokenId, address buyer, address seller, uint256 price);
+    event Hatch(uint256 indexed tokenId, uint256 dna);
     event UpdateTribe(uint256 indexed tokenId, Tribe tribe);
     event UpgradeGeneration(uint256 indexed tokenId, uint256 newGeneration);
     event Exp(uint256 indexed tokenId, uint256 exp);
-    event Working(uint256 indexed tokenId, uint256 time);
-    event PlaceOrder(uint256 indexed tokenId, address seller, uint256 price);
-    event CancelOrder(uint256 indexed tokenId, address seller);
-    event UpdatePrice(uint256 indexed tokenId, address seller, uint256 newPrice);
-    event FillOrder(uint256 indexed tokenId, address seller);
+    event Farming(uint256 indexed tokenId, uint256 time);
+    // event PlaceOrder(uint256 indexed tokenId, address seller, uint256 price);
+    // event CancelOrder(uint256 indexed tokenId, address seller);
+    // event UpdatePrice(uint256 indexed tokenId, address seller, uint256 newPrice);
+    // event FillOrder(uint256 indexed tokenId, address seller);
 
     struct Metadata {
         uint256 generation;
@@ -52,28 +51,27 @@ contract NFT is ERC721 {
     uint256 public latestTokenId;
     mapping(uint256 => bool) public isEvolved;
 
-    mapping(uint256 => Metadata) internal zooners;
+    mapping(uint256 => Metadata) internal heros;
     mapping(uint256 => ItemSale) internal markets;
 
     EnumerableSet.UintSet private tokenSales;
     mapping(address => EnumerableSet.UintSet) private sellerTokens;
 
-    IERC20 public gameToken;
     IManager public manager;
+    address public owner;
 
     constructor(
         string memory _name,
         string memory _symbol,
-        address _manager,
-        address _gameToken
+        IManager _manager
     ) ERC721(_name, _symbol) {
-        manager = IManager(_manager);
-        gameToken = IERC20(_gameToken);
+        manager = _manager;
+        owner = msg.sender;
     }
 
-    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
-        if (manager.markets(operator) || manager.markets(owner)) return true;
-        return super.isApprovedForAll(owner, operator);
+    modifier onlyOwner() {
+        require(owner == msg.sender, "sender is not an owner");
+        _;
     }
 
     modifier onlyFarmer() {
@@ -82,7 +80,7 @@ contract NFT is ERC721 {
     }
 
     modifier onlySpawner() {
-        require(manager.evolvers(msg.sender), "require Spawner.");
+        require(manager.spawners(msg.sender), "require Spawner.");
         _;
     }
 
@@ -91,77 +89,12 @@ contract NFT is ERC721 {
         _;
     }
 
-    function feeLayEgg() public view returns (uint256) {
-        return manager.feeLayEgg();
+    function migrate(IManager _manager) external onlyOwner {
+        manager = _manager;
     }
 
-    function feeEvolve() public view returns (uint256) {
-        return manager.feeEvolve();
-    }
-
-    function _mint(address to, uint256 tokenId) internal override(ERC721) {
-        super._mint(to, tokenId);
-
-        _incrementTokenId();
-    }
-
-    function working(uint256 _tokenId, uint256 _time) public onlyFarmer {
-        require(_time > 0, "no time");
-        Metadata storage zooner = zooners[_tokenId];
-        zooner.farmTime = zooner.farmTime.add(_time);
-
-        emit Working(_tokenId, _time);
-    }
-
-    function exp(uint256 _tokenId, uint256 _exp) public onlyBattlefield {
-        require(_exp > 0, "no exp");
-        Metadata storage zooner = zooners[_tokenId];
-        zooner.exp = zooner.exp.add(_exp);
-        emit Exp(_tokenId, _exp);
-    }
-
-    function evolve(
-        uint256 _tokenId,
-        address _owner,
-        uint256 _dna
-    ) public onlySpawner {
-        require(ownerOf(_tokenId) == _owner, "not own");
-        Metadata storage zooner = zooners[_tokenId];
-        require(!isEvolved[_tokenId], "require: not evolved");
-
-        zooner.bornTime = block.timestamp;
-        zooner.dna = _dna;
-        isEvolved[_tokenId] = true;
-
-        emit Evolve(_tokenId, _dna);
-    }
-
-    function changeTribe(
-        uint256 _tokenId,
-        address _owner,
-        Tribe tribe
-    ) external onlySpawner {
-        require(ownerOf(_tokenId) == _owner, "not own");
-        gameToken.transferFrom(_msgSender(), manager.feeAddress(), manager.feeChangeTribe());
-
-        Metadata storage zooner = zooners[_tokenId];
-        zooner.tribe = tribe;
-
-        emit UpdateTribe(_tokenId, tribe);
-    }
-
-    function upgradeGeneration(
-        uint256 _tokenId,
-        address _owner,
-        uint256 _generation
-    ) external onlySpawner {
-        require(ownerOf(_tokenId) == _owner, "not own");
-        gameToken.transferFrom(_msgSender(), manager.feeAddress(), manager.feeUpgradeGeneration());
-
-        Metadata storage zooner = zooners[_tokenId];
-        zooner.generation = _generation;
-
-        emit UpgradeGeneration(_tokenId, _generation);
+    function isApprovedForAll(address _owner, address _operator) public view virtual override returns (bool) {
+        return manager.markets(_operator) || manager.markets(_owner) || super.isApprovedForAll(_owner, _operator);
     }
 
     function layEgg(address receiver, uint8[] memory tribes) external onlySpawner {
@@ -180,9 +113,55 @@ contract NFT is ERC721 {
         uint256 nextTokenId = _getNextTokenId();
         _mint(receiver, nextTokenId);
 
-        zooners[nextTokenId] = Metadata({ generation: manager.generation(), tribe: tribe, exp: 0, dna: 0, farmTime: 0, bornTime: block.timestamp });
+        heros[nextTokenId] = Metadata({ generation: manager.generation(), tribe: tribe, exp: 0, dna: 0, farmTime: 0, bornTime: block.timestamp });
 
         emit LayEgg(nextTokenId, receiver);
+    }
+
+    function _mint(address to, uint256 tokenId) internal override(ERC721) {
+        super._mint(to, tokenId);
+
+        _incrementTokenId();
+    }
+
+    function hatch(uint256 _tokenId, uint256 _dna) public onlySpawner {
+        Metadata storage hero = heros[_tokenId];
+        require(!isEvolved[_tokenId], "require: not evolved");
+
+        hero.bornTime = block.timestamp;
+        hero.dna = _dna;
+        isEvolved[_tokenId] = true;
+
+        emit Hatch(_tokenId, _dna);
+    }
+
+    function farming(uint256 _tokenId, uint256 _time) public onlyFarmer {
+        require(_time > 0, "no time");
+        Metadata storage hero = heros[_tokenId];
+        hero.farmTime = hero.farmTime.add(_time);
+
+        emit Farming(_tokenId, _time);
+    }
+
+    function exp(uint256 _tokenId, uint256 _exp) public onlyBattlefield {
+        require(_exp > 0, "no exp");
+        Metadata storage hero = heros[_tokenId];
+        hero.exp = hero.exp.add(_exp);
+        emit Exp(_tokenId, _exp);
+    }
+
+    function changeTribe(uint256 _tokenId, uint8 _tribe) external onlySpawner {
+        Metadata storage hero = heros[_tokenId];
+        hero.tribe = Tribe(_tribe);
+
+        emit UpdateTribe(_tokenId, Tribe(_tribe));
+    }
+
+    function upgradeGeneration(uint256 _tokenId) external onlySpawner {
+        Metadata storage hero = heros[_tokenId];
+        hero.generation += 1;
+
+        emit UpgradeGeneration(_tokenId, hero.generation);
     }
 
     /**
@@ -200,16 +179,16 @@ contract NFT is ERC721 {
         latestTokenId++;
     }
 
-    function getZooner(uint256 _tokenId) public view returns (Metadata memory) {
-        return zooners[_tokenId];
+    function getHero(uint256 _tokenId) public view returns (Metadata memory) {
+        return heros[_tokenId];
     }
 
-    function zoonerLevel(uint256 _tokenId) public view returns (uint256) {
-        return getLevel(getZooner(_tokenId).exp);
+    function heroLevel(uint256 _tokenId) public view returns (uint256) {
+        return getLevel(getHero(_tokenId).exp);
     }
 
     function getRare(uint256 _tokenId) public view returns (uint256) {
-        uint256 dna = getZooner(_tokenId).dna;
+        uint256 dna = getHero(_tokenId).dna;
         if (dna == 0) return 0;
         uint256 rareParser = dna / 10**26;
         if (rareParser < 5225) {
@@ -243,87 +222,87 @@ contract NFT is ERC721 {
         }
     }
 
-    function placeOrder(uint256 _tokenId, uint256 _price) public {
-        require(ownerOf(_tokenId) == _msgSender(), "not own");
-        require(_price > 0, "nothing is free");
-        require(isEvolved[_tokenId], "require: evolved");
+    // function placeOrder(uint256 _tokenId, uint256 _price) public {
+    //     require(ownerOf(_tokenId) == _msgSender(), "not own");
+    //     require(_price > 0, "nothing is free");
+    //     require(isEvolved[_tokenId], "require: evolved");
 
-        tokenOrder(_tokenId, true, _price);
+    //     tokenOrder(_tokenId, true, _price);
 
-        emit PlaceOrder(_tokenId, _msgSender(), _price);
-    }
+    //     emit PlaceOrder(_tokenId, _msgSender(), _price);
+    // }
 
-    function cancelOrder(uint256 _tokenId) public {
-        require(tokenSales.contains(_tokenId), "not sale");
-        ItemSale storage itemSale = markets[_tokenId];
-        require(itemSale.owner == _msgSender(), "not own");
+    // function cancelOrder(uint256 _tokenId) public {
+    //     require(tokenSales.contains(_tokenId), "not sale");
+    //     ItemSale storage itemSale = markets[_tokenId];
+    //     require(itemSale.owner == _msgSender(), "not own");
 
-        tokenOrder(_tokenId, false, 0);
+    //     tokenOrder(_tokenId, false, 0);
 
-        emit CancelOrder(_tokenId, _msgSender());
-    }
+    //     emit CancelOrder(_tokenId, _msgSender());
+    // }
 
-    function updatePrice(uint256 _tokenId, uint256 _price) public {
-        require(_price > 0, "nothing is free");
-        require(tokenSales.contains(_tokenId), "not sale");
-        ItemSale storage itemSale = markets[_tokenId];
-        require(itemSale.owner == _msgSender(), "not own");
+    // function updatePrice(uint256 _tokenId, uint256 _price) public {
+    //     require(_price > 0, "nothing is free");
+    //     require(tokenSales.contains(_tokenId), "not sale");
+    //     ItemSale storage itemSale = markets[_tokenId];
+    //     require(itemSale.owner == _msgSender(), "not own");
 
-        itemSale.price = _price;
+    //     itemSale.price = _price;
 
-        emit UpdatePrice(_tokenId, _msgSender(), _price);
-    }
+    //     emit UpdatePrice(_tokenId, _msgSender(), _price);
+    // }
 
-    function fillOrder(uint256 _tokenId) public {
-        require(tokenSales.contains(_tokenId), "not sale");
-        ItemSale storage itemSale = markets[_tokenId];
-        uint256 feeMarket = itemSale.price.mul(manager.feeMarketRate()).div(manager.divPercent());
-        gameToken.transferFrom(_msgSender(), manager.feeAddress(), feeMarket);
-        gameToken.transferFrom(_msgSender(), itemSale.owner, itemSale.price.sub(feeMarket));
+    // function fillOrder(uint256 _tokenId) public {
+    //     require(tokenSales.contains(_tokenId), "not sale");
+    //     ItemSale storage itemSale = markets[_tokenId];
+    //     uint256 feeMarket = itemSale.price.mul(manager.feeMarketRate()).div(manager.divPercent());
+    //     gameToken.transferFrom(_msgSender(), manager.feeAddress(), feeMarket);
+    //     gameToken.transferFrom(_msgSender(), itemSale.owner, itemSale.price.sub(feeMarket));
 
-        tokenOrder(_tokenId, false, 0);
-        emit FillOrder(_tokenId, _msgSender());
-    }
+    //     tokenOrder(_tokenId, false, 0);
+    //     emit FillOrder(_tokenId, _msgSender());
+    // }
 
-    function tokenOrder(
-        uint256 _tokenId,
-        bool _sell,
-        uint256 _price
-    ) internal {
-        ItemSale storage itemSale = markets[_tokenId];
-        if (_sell) {
-            transferFrom(_msgSender(), address(this), _tokenId);
-            tokenSales.add(_tokenId);
-            sellerTokens[_msgSender()].add(_tokenId);
+    // function tokenOrder(
+    //     uint256 _tokenId,
+    //     bool _sell,
+    //     uint256 _price
+    // ) internal {
+    //     ItemSale storage itemSale = markets[_tokenId];
+    //     if (_sell) {
+    //         transferFrom(_msgSender(), address(this), _tokenId);
+    //         tokenSales.add(_tokenId);
+    //         sellerTokens[_msgSender()].add(_tokenId);
 
-            markets[_tokenId] = ItemSale({ tokenId: _tokenId, price: _price, owner: _msgSender() });
-        } else {
-            transferFrom(address(this), _msgSender(), _tokenId);
+    //         markets[_tokenId] = ItemSale({ tokenId: _tokenId, price: _price, owner: _msgSender() });
+    //     } else {
+    //         transferFrom(address(this), _msgSender(), _tokenId);
 
-            tokenSales.remove(_tokenId);
-            sellerTokens[itemSale.owner].remove(_tokenId);
-            markets[_tokenId] = ItemSale({ tokenId: 0, price: 0, owner: address(0) });
-        }
-    }
+    //         tokenSales.remove(_tokenId);
+    //         sellerTokens[itemSale.owner].remove(_tokenId);
+    //         markets[_tokenId] = ItemSale({ tokenId: 0, price: 0, owner: address(0) });
+    //     }
+    // }
 
-    function marketsSize() public view returns (uint256) {
-        return tokenSales.length();
-    }
+    // function marketsSize() public view returns (uint256) {
+    //     return tokenSales.length();
+    // }
 
-    function orders(address _seller) public view returns (uint256) {
-        return sellerTokens[_seller].length();
-    }
+    // function orders(address _seller) public view returns (uint256) {
+    //     return sellerTokens[_seller].length();
+    // }
 
-    function tokenSaleByIndex(uint256 index) public view returns (uint256) {
-        return tokenSales.at(index);
-    }
+    // function tokenSaleByIndex(uint256 index) public view returns (uint256) {
+    //     return tokenSales.at(index);
+    // }
 
-    function tokenSaleOfOwnerByIndex(address _seller, uint256 index) public view returns (uint256) {
-        return sellerTokens[_seller].at(index);
-    }
+    // function tokenSaleOfOwnerByIndex(address _seller, uint256 index) public view returns (uint256) {
+    //     return sellerTokens[_seller].at(index);
+    // }
 
-    function getSale(uint256 _tokenId) public view returns (ItemSale memory) {
-        if (tokenSales.contains(_tokenId)) return markets[_tokenId];
-        return ItemSale({ tokenId: 0, owner: address(0), price: 0 });
-    }
+    // function getSale(uint256 _tokenId) public view returns (ItemSale memory) {
+    //     if (tokenSales.contains(_tokenId)) return markets[_tokenId];
+    //     return ItemSale({ tokenId: 0, owner: address(0), price: 0 });
+    // }
 }

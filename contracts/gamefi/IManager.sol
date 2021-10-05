@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 interface IManager {
     function battlefields(address _address) external view returns (bool);
 
-    function evolvers(address _address) external view returns (bool);
+    function spawners(address _address) external view returns (bool);
 
     function markets(address _address) external view returns (bool);
 
