@@ -19,7 +19,7 @@ interface IManager {
 
     function xBattle() external view returns (uint256);
 
-    function priceEgg() external view returns (uint256);
+    function feeLayEgg() external view returns (uint256);
 
     function divPercent() external view returns (uint256);
 

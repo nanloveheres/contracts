@@ -47,27 +47,28 @@ abstract contract AdminRole is AccessControl {
         emit AdminRemoved(account);
     }
 
-    function newRole(bytes memory role) public onlyRole(OWNER_ROLE) {
+    function newRole(string memory role) public onlyRole(OWNER_ROLE) {
         _newRole(role);
     }
 
-    function _newRole(bytes memory role) internal virtual {
-        _setupRole(keccak256(role), msg.sender);
-        _setRoleAdmin(keccak256(role), OWNER_ROLE);
+    function _newRole(string memory role) internal virtual {
+        bytes32 byteRole = keccak256(bytes(role));
+        _setupRole(byteRole, msg.sender);
+        _setRoleAdmin(byteRole, OWNER_ROLE);
     }
 
-    function isRole(bytes memory role, address account) public view returns (bool) {
-        return hasRole(keccak256(role), account);
+    function isRole(string memory role, address account) public view returns (bool) {
+        return hasRole(keccak256(bytes(role)), account);
     }
 
-    function addRole(bytes memory role, address account) public onlyRole(OWNER_ROLE) {
-        grantRole(keccak256(role), account);
-        emit RoleAdded(string(role), account);
+    function addRole(string memory role, address account) public onlyRole(OWNER_ROLE) {
+        grantRole(keccak256(bytes(role)), account);
+        emit RoleAdded(role, account);
     }
 
-    function removeRole(bytes memory role, address account) public onlyRole(OWNER_ROLE) {
-        revokeRole(keccak256(role), account);
-        emit RoleRemoved(string(role), account);
+    function removeRole(string memory role, address account) public onlyRole(OWNER_ROLE) {
+        revokeRole(keccak256(bytes(role)), account);
+        emit RoleRemoved(role, account);
     }
 
     function close() public payable onlyRole(OWNER_ROLE) {

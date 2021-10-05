@@ -91,8 +91,8 @@ contract NFT is ERC721 {
         _;
     }
 
-    function priceEgg() public view returns (uint256) {
-        return manager.priceEgg();
+    function feeLayEgg() public view returns (uint256) {
+        return manager.feeLayEgg();
     }
 
     function feeEvolve() public view returns (uint256) {
@@ -166,7 +166,7 @@ contract NFT is ERC721 {
 
     function layEgg(address receiver, uint8[] memory tribes) external onlySpawner {
         uint256 amount = tribes.length;
-        require(amount > 0, "require: >0");
+        require(amount > 0, "require tribes: >0");
         if (amount == 1) {
             _layEgg(receiver, Tribe(tribes[0]));
         } else {

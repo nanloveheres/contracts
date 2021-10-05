@@ -16,12 +16,12 @@ describe("ERC20Token", () => {
     let token: Contract
 
     beforeEach(async () => {
-        const ERC20Token = await ethers.getContractFactory("ERC20Token")
         ;[owner, alice, bob] = await ethers.getSigners()
+        const ERC20Token = await ethers.getContractFactory("ERC20Token")
 
         token = await ERC20Token.deploy()
-        await token.deployed()
-        await token.deployed()
+        // await token.deployed()
+        // await token.deployed()
         await token.connect(owner).transfer(alice.address, ether(1000))
     })
 

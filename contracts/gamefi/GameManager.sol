@@ -50,43 +50,43 @@ contract GameManager is IManager, AdminRole {
     }
 
     function timeLimitBattle() external view override returns (uint256) {
-        return propsU256['timeLimitBattle'];
+        return propsU256["timeLimitBattle"];
     }
 
     function generation() external view override returns (uint256) {
-        return propsU256['generation'];
+        return propsU256["generation"];
     }
 
     function xBattle() external view override returns (uint256) {
-        return propsU256['xBattle'];
+        return propsU256["xBattle"];
     }
 
-    function priceEgg() external view override returns (uint256) {
-        return propsU256['priceEgg'];
+    function feeLayEgg() external view override returns (uint256) {
+        return propsU256["feeLayEgg"];
     }
 
     function divPercent() external view override returns (uint256) {
-        return propsU256['divPercent'];
+        return propsU256["divPercent"];
     }
 
     function feeUpgradeGeneration() external view override returns (uint256) {
-        return propsU256['feeUpgradeGeneration'];
+        return propsU256["feeUpgradeGeneration"];
     }
 
     function feeChangeTribe() external view override returns (uint256) {
-        return propsU256['feeChangeTribe'];
+        return propsU256["feeChangeTribe"];
     }
 
     function feeMarketRate() external view override returns (uint256) {
-        return propsU256['feeMarketRate'];
+        return propsU256["feeMarketRate"];
     }
 
     function loseRate() external view override returns (uint256) {
-        return propsU256['loseRate'];
+        return propsU256["loseRate"];
     }
 
     function feeEvolve() external view override returns (uint256) {
-        return propsU256['feeEvolve'];
+        return propsU256["feeEvolve"];
     }
 
     function feeAddress() external view override returns (address) {
@@ -97,12 +97,11 @@ contract GameManager is IManager, AdminRole {
         timesBattleMap[level] = times;
     }
 
-    function setPropsU256(string memory name, uint256 value) external payable onlyOwner{
+    function setPropsU256(string memory name, uint256 value) external payable onlyOwner {
         propsU256[name] = value;
     }
 
-    function setFeeAddress(address _address) external payable onlyOwner{
+    function setFeeAddress(address _address) external payable onlyOwner {
         _feeAddress = _address;
     }
-
 }

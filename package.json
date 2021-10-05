@@ -15,6 +15,7 @@
     "test-reward": "hardhat test test/RewardToken.test.ts",
     "test-vault": "hardhat test test/ERC20Vault.test.ts",
     "test-chef": "hardhat test test/MasterChef.test.ts",
+    "test-gamefi": "hardhat test test/GameFi.test.ts",
     "hardhat:node": "hardhat node --hostname 0.0.0.0",
     "hardhat:dev": "hardhat --network localhost",
     "hardhat:test": "hardhat test --network hardhat",
