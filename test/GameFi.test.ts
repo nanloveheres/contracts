@@ -73,4 +73,10 @@ describe("GameFi", () => {
         await gameFi.emergencyWithdraw()
         expect(await gameToken.balanceOf(market.address), "market balance").to.eq(FEE_LAY_EGG)
     })
+
+    it("Demo", async () => {
+        const r = await nft.getRareSample()
+        console.info(`r: ${r}`)
+        expect(r >= 0 && r <= 10000, "rare sample").to.eq(true)
+    })
 })

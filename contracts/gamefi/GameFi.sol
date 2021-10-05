@@ -21,6 +21,15 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
     IManager public manager;
     IRandom public rand;
 
+    mapping(uint256 => uint256) public lastFightTimes;
+
+    struct Monster {
+        uint256 level;
+        uint256 winRate;
+        uint256 reward;
+        uint256 exp;
+    }
+
     constructor(
         NFT _nft,
         IERC20 _gameToken,
@@ -67,7 +76,7 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
 
     function hatch(uint256 _tokenId) external nonReentrant onlyNFTOwner(_tokenId) {
         gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), manager.feeEvolve());
-        uint256 _dna = rand.generate(_tokenId);
+        uint256 _dna = rand.generate(_tokenId) % (2**32);
         nft.hatch(_tokenId, _dna);
     }
 
@@ -81,7 +90,10 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
         nft.upgradeGeneration(_tokenId);
     }
 
-
+    function fightMonster(uint256 _tokenId, uint256 _monsterId) external nonReentrant onlyNFTOwner(_tokenId) {
+        uint256 _exp = 1000;
+        nft.exp(_tokenId, _exp);
+    }
 
     // emergency functions
 

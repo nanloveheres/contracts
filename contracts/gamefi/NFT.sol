@@ -135,21 +135,6 @@ contract NFT is ERC721 {
         emit Hatch(_tokenId, _dna);
     }
 
-    function farming(uint256 _tokenId, uint256 _time) public onlyFarmer {
-        require(_time > 0, "no time");
-        Metadata storage hero = heros[_tokenId];
-        hero.farmTime = hero.farmTime.add(_time);
-
-        emit Farming(_tokenId, _time);
-    }
-
-    function exp(uint256 _tokenId, uint256 _exp) public onlyBattlefield {
-        require(_exp > 0, "no exp");
-        Metadata storage hero = heros[_tokenId];
-        hero.exp = hero.exp.add(_exp);
-        emit Exp(_tokenId, _exp);
-    }
-
     function changeTribe(uint256 _tokenId, uint8 _tribe) external onlySpawner {
         Metadata storage hero = heros[_tokenId];
         hero.tribe = Tribe(_tribe);
@@ -162,6 +147,21 @@ contract NFT is ERC721 {
         hero.generation += 1;
 
         emit UpgradeGeneration(_tokenId, hero.generation);
+    }
+
+    function exp(uint256 _tokenId, uint256 _exp) public onlyBattlefield {
+        require(_exp > 0, "no exp");
+        Metadata storage hero = heros[_tokenId];
+        hero.exp = hero.exp.add(_exp);
+        emit Exp(_tokenId, _exp);
+    }
+
+    function farming(uint256 _tokenId, uint256 _time) public onlyFarmer {
+        require(_time > 0, "no time");
+        Metadata storage hero = heros[_tokenId];
+        hero.farmTime = hero.farmTime.add(_time);
+
+        emit Farming(_tokenId, _time);
     }
 
     /**
@@ -190,19 +190,19 @@ contract NFT is ERC721 {
     function getRare(uint256 _tokenId) public view returns (uint256) {
         uint256 dna = getHero(_tokenId).dna;
         if (dna == 0) return 0;
-        uint256 rareParser = dna / 10**26;
-        if (rareParser < 5225) {
-            return 1;
-        } else if (rareParser < 7837) {
-            return 2;
-        } else if (rareParser < 8707) {
-            return 3;
-        } else if (rareParser < 9360) {
-            return 4;
-        } else if (rareParser < 9708) {
-            return 5;
-        } else {
+        uint256 rareParser = dna % 10000; // [0, 10000)
+        if (rareParser < 10) {
             return 6;
+        } else if (rareParser < 110) {
+            return 5;
+        } else if (rareParser < 610) {
+            return 4;
+        } else if (rareParser < 1610) {
+            return 3;
+        } else if (rareParser < 4610) {
+            return 2;
+        } else {
+            return 1;
         }
     }
 
