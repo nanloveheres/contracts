@@ -10,6 +10,7 @@ import "hardhat/console.sol";
 import "../utils/AdminRole.sol";
 import "./NFT.sol";
 import "./IManager.sol";
+import "./IFight.sol";
 import "./IRandom.sol";
 
 contract GameFi is AdminRole, ReentrancyGuard, Pausable {
@@ -19,28 +20,24 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
     IERC20 public gameToken;
     IERC20 public rewardToken;
     IManager public manager;
+    IFight public fight;
     IRandom public rand;
 
-    mapping(uint256 => uint256) public lastFightTimes;
-
-    struct Monster {
-        uint256 level;
-        uint256 winRate;
-        uint256 reward;
-        uint256 exp;
-    }
+    event Fight(uint256 indexed tokenId, uint256 exp, uint256 reward);
 
     constructor(
         NFT _nft,
         IERC20 _gameToken,
         IERC20 _rewardToken,
         IManager _manager,
+        IFight _fight,
         IRandom _rand
     ) {
         nft = _nft;
         gameToken = _gameToken;
         rewardToken = _rewardToken;
         manager = _manager;
+        fight = _fight;
         rand = _rand;
     }
 
@@ -49,12 +46,14 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
         IERC20 _gameToken,
         IERC20 _rewardToken,
         IManager _manager,
+        IFight _fight,
         IRandom _rand
     ) external onlyOwner {
         nft = _nft;
         gameToken = _gameToken;
         rewardToken = _rewardToken;
         manager = _manager;
+        fight = _fight;
         rand = _rand;
     }
 
@@ -91,13 +90,25 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
     }
 
     function fightMonster(uint256 _tokenId, uint256 _monsterId) external nonReentrant onlyNFTOwner(_tokenId) {
-        uint256 _exp = 1000;
+        uint256 _exp = fight.fightMonster(_tokenId, _monsterId);
+        console.log("exp: %s", _exp);
+        uint256 _rewardAmount = _exp * fight.getRewardRatio(_monsterId);
+
+        emit Fight(_tokenId, _exp, _rewardAmount);
+
+        if (_exp == 0) {
+            // lose
+            return;
+        }
+
         nft.exp(_tokenId, _exp);
+        rewardToken.transfer(_msgSender(), _rewardAmount);
     }
 
     // emergency functions
 
     function emergencyWithdraw() external onlyOwner {
         gameToken.transfer(_msgSender(), gameToken.balanceOf(address(this)));
+        rewardToken.transfer(_msgSender(), rewardToken.balanceOf(address(this)));
     }
 }

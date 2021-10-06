@@ -21,6 +21,7 @@ contract GameManager is IManager, AdminRole {
         propsU256["feeUpgradeGeneration"] = 500 ether;
         propsU256["feeEvolve"] = 6000 ether;
         propsU256["loseRate"] = 300;
+        propsU256["fightTimeInterval"] = 4 hours;
     }
 
     function battlefields(address _address) external view override returns (bool) {
@@ -85,6 +86,10 @@ contract GameManager is IManager, AdminRole {
 
     function feeAddress() external view override returns (address) {
         return _feeAddress;
+    }
+
+    function fightTimeInterval() external view override returns (uint256) {
+        return propsU256["fightTimeInterval"];
     }
 
     function setTimesBattle(uint256 level, uint256 times) external payable onlyOwner {

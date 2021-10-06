@@ -183,11 +183,11 @@ contract NFT is ERC721 {
         return heros[_tokenId];
     }
 
-    function heroLevel(uint256 _tokenId) public view returns (uint256) {
+    function level(uint256 _tokenId) public view returns (uint8) {
         return getLevel(getHero(_tokenId).exp);
     }
 
-    function getRare(uint256 _tokenId) public view returns (uint256) {
+    function rare(uint256 _tokenId) public view returns (uint8) {
         uint256 dna = getHero(_tokenId).dna;
         if (dna == 0) return 0;
         uint256 rareParser = dna % 10000; // [0, 10000)
@@ -206,7 +206,7 @@ contract NFT is ERC721 {
         }
     }
 
-    function getLevel(uint256 _exp) internal pure returns (uint256) {
+    function getLevel(uint256 _exp) internal pure returns (uint8) {
         if (_exp < 100) {
             return 1;
         } else if (_exp < 350) {

@@ -34,4 +34,6 @@ interface IManager {
     function feeEvolve() external view returns (uint256);
 
     function feeAddress() external view returns (address);
+
+    function fightTimeInterval() external view returns (uint256);
 }

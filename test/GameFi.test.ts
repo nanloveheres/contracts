@@ -14,6 +14,7 @@ describe("GameFi", () => {
     let rewardToken: Contract
     let nft: Contract
     let gameManager: Contract
+    let gameFight: Contract
     let gameFi: Contract
 
     const FEE_LAY_EGG = ether(100)
@@ -26,6 +27,7 @@ describe("GameFi", () => {
         const ERC20Token = await ethers.getContractFactory("ERC20Token")
         const NFT = await ethers.getContractFactory("NFT")
         const GameManager = await ethers.getContractFactory("GameManager")
+        const GameFight = await ethers.getContractFactory("GameFight")
         const GameFi = await ethers.getContractFactory("GameFi")
 
         const rand = await PseudoRandom.deploy()
@@ -42,9 +44,13 @@ describe("GameFi", () => {
         // nft
         nft = await NFT.deploy("Space Man", "SPACEMAN", gameManager.address)
 
+        // fight
+        gameFight = await GameFight.deploy(nft.address, gameManager.address, rand.address)
+
         // gamefi
-        gameFi = await GameFi.deploy(nft.address, gameToken.address, rewardToken.address, gameManager.address, rand.address)
+        gameFi = await GameFi.deploy(nft.address, gameToken.address, rewardToken.address, gameManager.address, gameFight.address, rand.address)
         gameManager.addRole("SPAWN", gameFi.address)
+        gameManager.addRole("BATTLE", gameFi.address)
         expect(await gameManager.isRole("SPAWN", gameFi.address), "gamefi role: SPAWN").to.eq(true)
 
         await gameToken.transfer(alice.address, ether(10000))
@@ -55,7 +61,7 @@ describe("GameFi", () => {
         await gameToken.connect(alice).approve(gameFi.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
     })
 
-    it("Lay eggs", async () => {
+    it("Lay one egg", async () => {
         await gameFi.connect(alice).layEgg([0])
         expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG))
         await expect(gameFi.connect(bob).layEgg([0]), "bob has no fund").to.be.reverted
@@ -66,6 +72,18 @@ describe("GameFi", () => {
         expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG.mul(5)))
     })
 
+    it("Hatch", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).hatch(1)
+    })
+
+    it("Fight monster", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).hatch(1)
+        await gameFi.connect(alice).fightMonster(1, 0)   
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.gt(0)     
+    })
+
     it("Emergency withdraw", async () => {
         expect(await gameToken.balanceOf(market.address), "market balance").to.eq(0)
         await gameFi.connect(alice).layEgg([0])
@@ -73,5 +91,4 @@ describe("GameFi", () => {
         await gameFi.emergencyWithdraw()
         expect(await gameToken.balanceOf(market.address), "market balance").to.eq(FEE_LAY_EGG)
     })
-
 })
