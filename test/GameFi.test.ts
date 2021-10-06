@@ -16,6 +16,7 @@ describe("GameFi", () => {
     let gameManager: Contract
     let gameFight: Contract
     let gameFi: Contract
+    let mockRandom: Contract
 
     const FEE_LAY_EGG = ether(100)
     const FEE_CHANGE_TRIBE = ether(1)
@@ -24,15 +25,18 @@ describe("GameFi", () => {
     beforeEach(async () => {
         ;[owner, alice, bob, market] = await ethers.getSigners()
         const PseudoRandom = await ethers.getContractFactory("PseudoRandom")
+        const MockRandom = await ethers.getContractFactory("MockRandom")
         const ERC20Token = await ethers.getContractFactory("ERC20Token")
+        const RewardToken = await ethers.getContractFactory("RewardToken")
         const NFT = await ethers.getContractFactory("NFT")
         const GameManager = await ethers.getContractFactory("GameManager")
         const GameFight = await ethers.getContractFactory("GameFight")
         const GameFi = await ethers.getContractFactory("GameFi")
 
-        const rand = await PseudoRandom.deploy()
+        // const rand = await PseudoRandom.deploy()
+        mockRandom = await MockRandom.deploy()
         gameToken = await ERC20Token.deploy()
-        rewardToken = await ERC20Token.deploy()
+        rewardToken = await RewardToken.deploy()
 
         // manager
         gameManager = await GameManager.deploy()
@@ -45,16 +49,16 @@ describe("GameFi", () => {
         nft = await NFT.deploy("Space Man", "SPACEMAN", gameManager.address)
 
         // fight
-        gameFight = await GameFight.deploy(nft.address, gameManager.address, rand.address)
+        gameFight = await GameFight.deploy(nft.address, gameManager.address, mockRandom.address)
 
         // gamefi
-        gameFi = await GameFi.deploy(nft.address, gameToken.address, rewardToken.address, gameManager.address, gameFight.address, rand.address)
+        gameFi = await GameFi.deploy(nft.address, gameToken.address, rewardToken.address, gameManager.address, gameFight.address, mockRandom.address)
         gameManager.addRole("SPAWN", gameFi.address)
         gameManager.addRole("BATTLE", gameFi.address)
         expect(await gameManager.isRole("SPAWN", gameFi.address), "gamefi role: SPAWN").to.eq(true)
 
         await gameToken.transfer(alice.address, ether(10000))
-        await rewardToken.transfer(gameFi.address, ether(1000000))
+        await rewardToken.transfer(gameFi.address, ether(10000000))
         console.info(`GameFi lanched.`)
 
         // alice: approve transferring to GameFi
@@ -74,14 +78,60 @@ describe("GameFi", () => {
 
     it("Hatch", async () => {
         await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000)
         await gameFi.connect(alice).hatch(1)
+        expect(await nft.rare(1)).to.eq(3)
     })
 
     it("Fight monster", async () => {
         await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000)
         await gameFi.connect(alice).hatch(1)
-        await gameFi.connect(alice).fightMonster(1, 0)   
-        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.gt(0)     
+
+        // mock win
+        let fightRatio = 1 // within 80
+        await mockRandom.setV(fightRatio)
+        const exp = 5 + Math.floor((fightRatio * 5) / 80)
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(exp))
+
+        // mock lose
+        fightRatio = 88 // out of 80
+        await mockRandom.setV(fightRatio)
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, 0, 0)
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(exp))
+    })
+
+    it("Fight monster in multiple times", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000)
+        await gameFi.connect(alice).hatch(1)
+
+        // mock win
+        let fightRatio = 1 // within 80
+        await mockRandom.setV(fightRatio)
+        let exp = 5 + Math.floor((fightRatio * 5) / 80)
+        let totalExp = exp
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+
+        // mock lose
+        fightRatio = 88 // out of 80
+        await mockRandom.setV(fightRatio)
+        exp = 0
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+
+        // mock win
+        fightRatio = 60 // within 80
+        await mockRandom.setV(fightRatio)
+        exp = 5 + Math.floor((fightRatio * 5) / 80)
+        totalExp += exp
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+
+        // run out the number of fight quota
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).to.be.reverted
     })
 
     it("Emergency withdraw", async () => {

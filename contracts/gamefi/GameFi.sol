@@ -76,6 +76,7 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
     function hatch(uint256 _tokenId) external nonReentrant onlyNFTOwner(_tokenId) {
         gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), manager.feeEvolve());
         uint256 _dna = rand.generate(_tokenId) % (2**32);
+        require(_dna > 0, "wrong dna, try again later");
         nft.hatch(_tokenId, _dna);
     }
 
