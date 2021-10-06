@@ -40,9 +40,9 @@ contract GameFight is IFight, AdminRole {
         rand = _rand;
 
         addMonster(1, 80, 1 ether, 5, 10);
-        addMonster(1, 70, 1 ether, 15, 30);
-        addMonster(1, 60, 1 ether, 20, 40);
-        addMonster(1, 20, 1 ether, 60, 120);
+        addMonster(2, 70, 1 ether, 15, 30);
+        addMonster(3, 60, 1 ether, 20, 40);
+        addMonster(4, 20, 1 ether, 60, 120);
     }
 
     function migrate(
