@@ -12,10 +12,10 @@ import "./NFT.sol";
 contract GameFight is IFight, AdminRole {
     uint256 constant DECIMALS = 10**18;
     uint256 constant REWARD_RATIO = 1 * DECIMALS;
-    
-    mapping(uint256 => FightItem) public fightMap; // tokenId => last fight time
+
+    mapping(uint256 => FightItem) public fightMap; // tokenId => fight item
     struct FightItem {
-        uint256 time; //last fight time
+        uint256 time; // last fight time
         uint8 num; // number of fight quote
     }
 

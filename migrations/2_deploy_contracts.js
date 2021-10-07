@@ -1,5 +1,5 @@
-var MyContract = artifacts.require("./ERC20Token.sol")
+const ERC20Token = artifacts.require("./ERC20Token.sol")
 
 module.exports = function (deployer) {
-    deployer.deploy(MyContract)
+    deployer.deploy(ERC20Token)
 }
