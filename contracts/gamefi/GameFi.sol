@@ -64,6 +64,7 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
 
     function layEgg(uint8[] memory tribes, address inviteeAddress) external nonReentrant {
         require(tribes.length > 0, "wrong tribes");
+        require(nft.layEggValidate(_msgSender()), "wrong egg validate");
         uint256 _amount = manager.feeLayEgg() * tribes.length;
         console.log("$egg:    %s", _amount);
         console.log("$sender: %s", gameToken.balanceOf(_msgSender()));
