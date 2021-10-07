@@ -122,7 +122,6 @@ contract NFT is ERC721 {
 
     function _layEgg(address receiver, Tribe tribe) internal {
         uint256 nextTokenId = _getNextTokenId();
-        require(nextTokenId > nftTotalSupply, "All token sold out.");
         _mint(receiver, nextTokenId);
 
         heros[nextTokenId] = Metadata({ generation: manager.generation(), tribe: tribe, exp: 0, dna: 0, farmTime: 0, bornTime: block.timestamp });
