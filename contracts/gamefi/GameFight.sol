@@ -10,6 +10,9 @@ import "./IRandom.sol";
 import "./NFT.sol";
 
 contract GameFight is IFight, AdminRole {
+    uint256 constant DECIMALS = 10**18;
+    uint256 constant REWARD_RATIO = 1 * DECIMALS;
+    
     mapping(uint256 => FightItem) public fightMap; // tokenId => last fight time
     struct FightItem {
         uint256 time; //last fight time
@@ -39,10 +42,10 @@ contract GameFight is IFight, AdminRole {
         manager = _manager;
         rand = _rand;
 
-        addMonster(1, 80, 1 ether, 5, 10);
-        addMonster(2, 70, 1 ether, 15, 30);
-        addMonster(3, 60, 1 ether, 20, 40);
-        addMonster(4, 20, 1 ether, 60, 120);
+        addMonster(1, 80, REWARD_RATIO, 5, 10);
+        addMonster(2, 70, REWARD_RATIO, 15, 30);
+        addMonster(3, 60, REWARD_RATIO, 20, 40);
+        addMonster(4, 20, REWARD_RATIO, 60, 120);
     }
 
     function migrate(
@@ -97,7 +100,7 @@ contract GameFight is IFight, AdminRole {
         return monsters[_monsterId].rewardRatio;
     }
 
-    function fightMonster(uint256 _tokenId, uint256 _monsterId) external onlyBattlefield override returns (uint256)  {
+    function fightMonster(uint256 _tokenId, uint256 _monsterId) external override onlyBattlefield returns (uint256) {
         uint8 _rare = nft.rare(_tokenId);
         require(_rare > 0, "wrong nft id");
         require(_monsterId < monsters.length, "wrong monster id");

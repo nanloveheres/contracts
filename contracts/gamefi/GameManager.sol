@@ -8,6 +8,7 @@ contract GameManager is IManager, AdminRole {
     mapping(uint256 => uint256) public timesBattleMap;
     mapping(string => uint256) public propsU256;
     address _feeAddress = address(this);
+    uint256 constant DECIMALS = 10**18;
 
     constructor() {
         _newRole("BATTLE");
@@ -16,10 +17,10 @@ contract GameManager is IManager, AdminRole {
         _newRole("FARM");
         propsU256["feeMarketRate"] = 300; //3%
         propsU256["divPercent"] = 10000;
-        propsU256["feeLayEgg"] = 1000 ether;
-        propsU256["feeChangeTribe"] = 1 ether;
-        propsU256["feeUpgradeGeneration"] = 500 ether;
-        propsU256["feeEvolve"] = 6000 ether;
+        propsU256["feeLayEgg"] = 1000 * DECIMALS;
+        propsU256["feeChangeTribe"] = 1 * DECIMALS;
+        propsU256["feeUpgradeGeneration"] = 500 * DECIMALS;
+        propsU256["feeEvolve"] = 6000 * DECIMALS;
         propsU256["loseRate"] = 300;
         propsU256["fightTimeInterval"] = 4 hours;
     }
