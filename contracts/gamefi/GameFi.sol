@@ -62,12 +62,25 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
         _;
     }
 
-    function layEgg(uint8[] memory tribes) external nonReentrant {
+    function layEgg(uint8[] memory tribes, address inviteeAddress) external nonReentrant {
         require(tribes.length > 0, "wrong tribes");
         uint256 _amount = manager.feeLayEgg() * tribes.length;
         console.log("$egg:    %s", _amount);
         console.log("$sender: %s", gameToken.balanceOf(_msgSender()));
-        gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), _amount);
+        //burn
+        gameToken.safeTransferFrom(_msgSender(), address(0), _amount * manager.brunFeeRate() / 100);
+        //To tech account
+        gameToken.safeTransferFrom(_msgSender(), manager.techProfitAddress(), _amount * manager.techFeeRate()/ 100);
+        if(inviteeAddress != address(0) && _msgSender()!= inviteeAddress){
+            //To invitee
+            gameToken.safeTransferFrom(_msgSender(), inviteeAddress, _amount * manager.inviteeFeeRate() / 100);
+            //To foundation account
+            gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), _amount * manager.foundationFeeRate() / 100);
+        }else{
+            uint toFoundationAmount = _amount * manager.foundationFeeRate() / 100 + _amount * manager.inviteeFeeRate() / 100;
+            //To foundation account
+            gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), toFoundationAmount);
+        }
         console.log("$sender: %s", gameToken.balanceOf(_msgSender()));
         console.log("$this:   %s", gameToken.balanceOf(manager.feeAddress()));
         nft.layEgg(_msgSender(), tribes);

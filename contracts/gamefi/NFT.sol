@@ -49,6 +49,7 @@ contract NFT is ERC721 {
     }
 
     uint256 public latestTokenId;
+    uint256 public nftTotalSupply;
     mapping(uint256 => bool) public isEvolved;
 
     mapping(uint256 => Metadata) internal heros;
@@ -67,6 +68,7 @@ contract NFT is ERC721 {
     ) ERC721(_name, _symbol) {
         manager = _manager;
         owner = msg.sender;
+        nftTotalSupply = 10000;
     }
 
     modifier onlyOwner() {
@@ -111,6 +113,7 @@ contract NFT is ERC721 {
 
     function _layEgg(address receiver, Tribe tribe) internal {
         uint256 nextTokenId = _getNextTokenId();
+        require(nextTokenId > nftTotalSupply, "All token sold out.");
         _mint(receiver, nextTokenId);
 
         heros[nextTokenId] = Metadata({ generation: manager.generation(), tribe: tribe, exp: 0, dna: 0, farmTime: 0, bornTime: block.timestamp });
@@ -224,6 +227,10 @@ contract NFT is ERC721 {
         } else {
             return 6;
         }
+    }
+
+    function setNFTTotalSupply(uint _totalSupply) external onlyOwner{
+        nftTotalSupply = _totalSupply;
     }
 
     // function placeOrder(uint256 _tokenId, uint256 _price) public {
