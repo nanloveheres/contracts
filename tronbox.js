@@ -10,6 +10,9 @@ Then, run the migration with:
 
 */
 require("dotenv").config()
+require("ts-node").register({
+  files: true,
+})
 
 module.exports = {
     networks: {

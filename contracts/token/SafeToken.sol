@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../utils/AdminRole.sol";
 
-abstract contract SafeToken is ERC20, AdminRole {
+contract SafeToken is ERC20, AdminRole {
     // Burn address
     address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     // Whale Addresses
