@@ -183,6 +183,10 @@ contract NFT is ERC721 {
         return heros[_tokenId];
     }
 
+    function bornTime(uint256 _tokenId) public view returns (uint256) {
+        return heros[_tokenId].bornTime;
+    }
+
     function level(uint256 _tokenId) public view returns (uint8) {
         return getLevel(getHero(_tokenId).exp);
     }

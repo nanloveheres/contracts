@@ -13,7 +13,7 @@ contract GameFight is IFight, AdminRole {
     mapping(uint256 => FightItem) public fightMap; // tokenId => last fight time
     struct FightItem {
         uint256 time; //last fight time
-        uint8 num; // number of fight
+        uint8 num; // number of fight quote
     }
 
     struct Monster {
@@ -55,6 +55,11 @@ contract GameFight is IFight, AdminRole {
         rand = _rand;
     }
 
+    modifier onlyBattlefield() {
+        require(manager.battlefields(msg.sender), "require Battlefield.");
+        _;
+    }
+
     function addMonster(
         uint8 _level,
         uint256 _winRate,
@@ -92,20 +97,28 @@ contract GameFight is IFight, AdminRole {
         return monsters[_monsterId].rewardRatio;
     }
 
-    function fightMonster(uint256 _tokenId, uint256 _monsterId) external override returns (uint256) {
+    function fightMonster(uint256 _tokenId, uint256 _monsterId) external onlyBattlefield override returns (uint256)  {
         uint8 _rare = nft.rare(_tokenId);
         require(_rare > 0, "wrong nft id");
         require(_monsterId < monsters.length, "wrong monster id");
 
-        FightItem storage fightItem = fightMap[_tokenId];
-        bool timeAllowed = (block.timestamp - fightItem.time >= manager.fightTimeInterval());
-        require(timeAllowed || fightItem.num < _rare, "wait for next fight interval");
-        fightItem.time = block.timestamp;
+        uint256 remainingFightNum = getRemainingFightNum(_tokenId);
+        require(remainingFightNum > 0, "wait for next fight interval");
 
-        if (fightItem.num >= _rare && timeAllowed) {
-            // new fight interval, reset the fight num
+        // uint256 quote = getFightQuoteNum(_tokenId);
+
+        FightItem storage fightItem = fightMap[_tokenId];
+        if (remainingFightNum == 1) {
+            // last fight, setup next fight interval, reset the fight num
+            fightItem.time = block.timestamp;
             fightItem.num = 0;
         }
+
+        // if (fightItem.num >= quote) {
+        //     // new fight interval, reset the fight num
+        //     fightItem.time = block.timestamp;
+        //     fightItem.num = 0;
+        // }
 
         fightItem.num += 1;
         Monster memory _monster = monsters[_monsterId];
@@ -120,5 +133,47 @@ contract GameFight is IFight, AdminRole {
 
         // calculate exp
         return _monster.lowExp + (_fightRatio * (_monster.highExp - _monster.lowExp)) / _monster.winRate;
+    }
+
+    function getRemainingFightNum(uint256 _tokenId) public view returns (uint256) {
+        uint8 _rare = nft.rare(_tokenId);
+        require(_rare > 0, "wrong nft id");
+
+        uint256 lastFightTime = getLastFightTime(_tokenId);
+        if (lastFightTime >= block.timestamp) {
+            return 0;
+        }
+
+        uint256 interval = (block.timestamp - lastFightTime) / manager.fightTimeInterval();
+        if (interval == 0) {
+            return 0;
+        }
+
+        FightItem memory fightItem = fightMap[_tokenId];
+        uint256 quote = getFightQuoteNum(_tokenId);
+
+        return (fightItem.num < quote ? quote - fightItem.num : quote);
+    }
+
+    function getFightQuoteNum(uint256 _tokenId) public view returns (uint256) {
+        uint8 _rare = nft.rare(_tokenId);
+        require(_rare > 0, "wrong nft id");
+
+        uint256 lastFightTime = getLastFightTime(_tokenId);
+        uint256 interval = (block.timestamp - lastFightTime) / manager.fightTimeInterval();
+        uint256 quote = interval <= 1 ? _rare : _rare * interval;
+        uint256 maxFightNum = getMaxFightNum(_rare);
+
+        return quote > maxFightNum ? maxFightNum : quote;
+    }
+
+    function getMaxFightNum(uint256 _rare) public pure returns (uint256) {
+        return _rare * 2;
+    }
+
+    function getLastFightTime(uint256 _tokenId) public view returns (uint256) {
+        FightItem memory fightItem = fightMap[_tokenId];
+        // once born, it can fight
+        return (fightItem.time > 0 ? fightItem.time : nft.bornTime(_tokenId) - manager.fightTimeInterval());
     }
 }

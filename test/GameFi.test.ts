@@ -102,10 +102,32 @@ describe("GameFi", () => {
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(exp))
     })
 
+    it("Fight monster > remaining fight num", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000) // rare = 3
+        await gameFi.connect(alice).hatch(1)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num").to.eq(3)
+    })
+
+    it("Fight monster > remaining fight num > diff intervals", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000) // rare = 3
+        await gameFi.connect(alice).hatch(1)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num, 1st").to.eq(3)
+
+        const fightTimeInterval = (await gameManager.fightTimeInterval()).toNumber()
+        await mineTime(fightTimeInterval)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num, 2nd").to.eq(6)
+
+        await mineTime(fightTimeInterval)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num, 3rd").to.eq(6) // max quote = 6
+    })
+
     it("Fight monster in multiple times", async () => {
         await gameFi.connect(alice).layEgg([0])
-        await mockRandom.setV(1000)
+        await mockRandom.setV(1000) // rare = 3
         await gameFi.connect(alice).hatch(1)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 3").to.eq(3)
 
         // mock win
         let fightRatio = 1 // within 80
@@ -114,6 +136,7 @@ describe("GameFi", () => {
         let totalExp = exp
         await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 2").to.eq(2)
 
         // mock lose
         fightRatio = 88 // out of 80
@@ -121,6 +144,7 @@ describe("GameFi", () => {
         exp = 0
         await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 1").to.eq(1)
 
         // mock win
         fightRatio = 60 // within 80
@@ -129,8 +153,35 @@ describe("GameFi", () => {
         totalExp += exp
         await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 0").to.eq(0)
 
-        // run out the number of fight quota
+        // run out the number of fight quote
+        await expect(gameFi.connect(alice).fightMonster(1, 0)).to.be.reverted
+    })
+
+    it("Fight monster in max times", async () => {
+        await gameFi.connect(alice).layEgg([0])
+        await mockRandom.setV(1000) // rare = 3
+        await gameFi.connect(alice).hatch(1)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 3").to.eq(3)
+        const fightTimeInterval = (await gameManager.fightTimeInterval()).toNumber()
+        await mineTime(fightTimeInterval)
+        expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 6").to.eq(6)
+
+        let i = 0
+        let totalExp = 0
+        while (i++ < 6) {
+            // mock win
+            const fightRatio = i // within 80
+            await mockRandom.setV(fightRatio)
+            const exp = 5 + Math.floor((fightRatio * 5) / 80)
+            totalExp += exp
+            await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+            expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
+            expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 2").to.eq(6 - i)
+        }
+
+        // run out the number of fight quote
         await expect(gameFi.connect(alice).fightMonster(1, 0)).to.be.reverted
     })
 
