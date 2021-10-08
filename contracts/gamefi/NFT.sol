@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./IManager.sol";
 
@@ -49,6 +49,8 @@ contract NFT is ERC721 {
     }
 
     uint256 public latestTokenId;
+    uint256 public nftTotalSupply;
+    uint256 public nftHoldLimit;
     mapping(uint256 => bool) public isEvolved;
 
     mapping(uint256 => Metadata) internal heros;
@@ -67,6 +69,8 @@ contract NFT is ERC721 {
     ) ERC721(_name, _symbol) {
         manager = _manager;
         owner = msg.sender;
+        nftTotalSupply = 10000;
+        nftHoldLimit = 3;
     }
 
     modifier onlyOwner() {
@@ -107,6 +111,13 @@ contract NFT is ERC721 {
                 _layEgg(receiver, Tribe(tribes[index]));
             }
         }
+    }
+
+    function layEggValidate(address receiver) external view onlySpawner returns (bool){
+        uint256 nextTokenId = _getNextTokenId();
+        require(nextTokenId > nftTotalSupply, "All token sold out.");
+        require(balanceOf(receiver) <= nftHoldLimit, "The number of EPets has reached the maximum");
+        return true;
     }
 
     function _layEgg(address receiver, Tribe tribe) internal {
@@ -225,6 +236,15 @@ contract NFT is ERC721 {
             return 6;
         }
     }
+
+    function setNFTTotalSupply(uint _totalSupply) external onlyOwner{
+        nftTotalSupply = _totalSupply;
+    }
+
+    function setNFTHoldLimit(uint _nftHoldLimit) external onlyOwner{
+        nftHoldLimit = _nftHoldLimit;
+    }
+
 
     // function placeOrder(uint256 _tokenId, uint256 _price) public {
     //     require(ownerOf(_tokenId) == _msgSender(), "not own");

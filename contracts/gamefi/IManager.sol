@@ -35,5 +35,15 @@ interface IManager {
 
     function feeAddress() external view returns (address);
 
+    function techProfitAddress() external view returns (address);
+
     function fightTimeInterval() external view returns (uint256);
+
+    function techFeeRate() external view returns (uint256);
+
+    function inviteeFeeRate() external view returns (uint256);
+
+    function brunFeeRate() external view returns (uint256);
+
+    function foundationFeeRate() external view returns (uint256);
 }
