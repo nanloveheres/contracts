@@ -4,6 +4,7 @@ const ether = n => {
     return ethers.utils.parseEther(n.toString()).toString()
 }
 
+// tronbox migrate --network shasta --reset
 module.exports = async function (deployer, network, accounts) {
     const deploy = async (name, ...args) => {
         const Artifacts = artifacts.require(`./${name}.sol`)
@@ -17,10 +18,10 @@ module.exports = async function (deployer, network, accounts) {
     const MARKET_ADDRESS = "TGXBEpgRyzsBrabjvnSuN2FeKSStoxXue2"
 
     // EVB
-    const gameToken = await deploy("SafeToken", "Evelyn Token (Test)", "T-EVB", ether(10 ** 10))
+    const gameToken = await deploy("SafeToken", "TEVB Token", "TEVB", ether(20 ** 10))
 
     // EEX
-    const rewardToken = await deploy("SafeToken", "Evelyn Explorer Token (Test)", "T-EEX", ether(10 ** 10))
+    const rewardToken = await deploy("SafeToken", "TEEX Token", "TEEX", ether(10 ** 10))
 
     // random
     const random = await deploy("PseudoRandom")
@@ -46,6 +47,6 @@ module.exports = async function (deployer, network, accounts) {
     // const isSpwanRole = await gameManager.isRole("SPAWN", gameFi.address)
     // console.info(`gamefi SPAWN role: ${isSpwanRole}`)
 
-    await rewardToken.transfer(gameFi.address, ether(10000000))
+    await rewardToken.transfer(gameFi.address, ether(123456789))
     console.info(`GameFi lanched.`)
 }
