@@ -5,7 +5,6 @@ const ether = n => {
 }
 
 module.exports = async function (deployer, network, accounts) {
-    const [alice] = accounts
     const deploy = async (name, ...args) => {
         const Artifacts = artifacts.require(`./${name}.sol`)
         await deployer.deploy(Artifacts, ...args)
@@ -22,7 +21,7 @@ module.exports = async function (deployer, network, accounts) {
 
     // EEX
     const rewardToken = await deploy("SafeToken", "Evelyn Explorer Token (Test)", "T-EEX", ether(10 ** 10))
-    
+
     // random
     const random = await deploy("PseudoRandom")
 
@@ -44,10 +43,9 @@ module.exports = async function (deployer, network, accounts) {
     const gameFi = await deploy("GameFi", nft.address, gameToken.address, rewardToken.address, gameManager.address, gameFight.address, random.address)
     gameManager.addRole("SPAWN", gameFi.address)
     gameManager.addRole("BATTLE", gameFi.address)
-    const isSpwanRole = await gameManager.isRole("SPAWN", gameFi.address)
-    console.info(`gamefi SPAWN role: ${isSpwanRole}`)
+    // const isSpwanRole = await gameManager.isRole("SPAWN", gameFi.address)
+    // console.info(`gamefi SPAWN role: ${isSpwanRole}`)
 
-    await gameToken.transfer(alice.address, ether(10000))
     await rewardToken.transfer(gameFi.address, ether(10000000))
     console.info(`GameFi lanched.`)
 }
