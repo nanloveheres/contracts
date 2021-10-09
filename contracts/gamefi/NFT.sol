@@ -115,7 +115,7 @@ contract NFT is ERC721 {
 
     function layEggValidate(address receiver) external view onlySpawner returns (bool){
         uint256 nextTokenId = _getNextTokenId();
-        require(nextTokenId > nftTotalSupply, "All token sold out.");
+        require(nextTokenId <= nftTotalSupply, "All token sold out.");
         require(balanceOf(receiver) <= nftHoldLimit, "The number of EPets has reached the maximum");
         return true;
     }
