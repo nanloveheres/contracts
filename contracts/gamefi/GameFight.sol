@@ -42,9 +42,9 @@ contract GameFight is IFight, AdminRole {
         manager = _manager;
         rand = _rand;
 
-        addMonster(1, 80, REWARD_RATIO, 5, 10);
+        addMonster(1, 80, REWARD_RATIO, 5, 15);
         addMonster(2, 70, REWARD_RATIO, 15, 30);
-        addMonster(3, 60, REWARD_RATIO, 20, 40);
+        addMonster(3, 60, REWARD_RATIO, 30, 60);
         addMonster(4, 20, REWARD_RATIO, 60, 120);
     }
 
