@@ -57,6 +57,10 @@ contract NFT is ERC721 {
         nftHoldLimit = 3;
     }
 
+    function migrate(IManager _manager) external onlyOwner {
+        manager = _manager;
+    }
+
     modifier onlyOwner() {
         require(owner == msg.sender, "sender is not an owner");
         _;
@@ -77,8 +81,8 @@ contract NFT is ERC721 {
         _;
     }
 
-    function migrate(IManager _manager) external onlyOwner {
-        manager = _manager;
+    function totalSupply() external view returns (uint256) {
+        return nftTotalSupply;
     }
 
     function isApprovedForAll(address _owner, address _operator) public view virtual override returns (bool) {
@@ -86,22 +90,13 @@ contract NFT is ERC721 {
     }
 
     function layEgg(address receiver, uint8[] memory tribes) external onlySpawner {
-        uint256 amount = tribes.length;
-        require(amount > 0, "require tribes: >0");
-        if (amount == 1) {
-            _layEgg(receiver, Tribe(tribes[0]));
-        } else {
-            for (uint256 index = 0; index < amount; index++) {
-                _layEgg(receiver, Tribe(tribes[index]));
-            }
-        }
-    }
-
-    function layEggValidate(address receiver) external view onlySpawner returns (bool) {
-        uint256 nextTokenId = _getNextTokenId();
-        require(nextTokenId <= nftTotalSupply, "All token sold out.");
+        require(tribes.length > 0, "require tribes: >0");
+        require(_getNextTokenId() <= nftTotalSupply, "All EPets sold out.");
         require(balanceOf(receiver) <= nftHoldLimit, "The number of EPets has reached the maximum");
-        return true;
+
+        for (uint256 index = 0; index < tribes.length; index++) {
+            _layEgg(receiver, Tribe(tribes[index]));
+        }
     }
 
     function _layEgg(address receiver, Tribe tribe) internal {
