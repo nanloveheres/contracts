@@ -75,7 +75,7 @@ contract NFTMarket is AdminRole {
         emit CancelOrder(_tokenId, _msgSender());
     }
 
-    function updatePrice(uint256 _tokenId, uint256 _price) public {
+    function updatePrice(uint256 _tokenId, uint256 _price) external {
         require(tokenSales.contains(_tokenId), "not sale");
         ItemSale storage itemSale = markets[_tokenId];
         require(itemSale.owner == _msgSender(), "not own");
@@ -86,7 +86,7 @@ contract NFTMarket is AdminRole {
         emit UpdatePrice(_tokenId, _msgSender(), _price);
     }
 
-    function fillOrder(uint256 _tokenId) public {
+    function fillOrder(uint256 _tokenId) external {
         require(tokenSales.contains(_tokenId), "not sale");
         ItemSale storage itemSale = markets[_tokenId];
         uint256 feeMarket = (itemSale.price * manager.feeMarketRate()) / manager.divPercent();
@@ -100,7 +100,7 @@ contract NFTMarket is AdminRole {
         emit FillOrder(_tokenId, _msgSender());
     }
 
-    function marketsSize() public view returns (uint256) {
+    function marketSize() public view returns (uint256) {
         return tokenSales.length();
     }
 

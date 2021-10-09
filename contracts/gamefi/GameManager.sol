@@ -8,7 +8,6 @@ import "../utils/AdminRole.sol";
 contract GameManager is IManager, AdminRole {
     mapping(uint256 => uint256) public timesBattleMap;
     mapping(string => uint256) public propsU256;
-    mapping(string => uint256) public feeSettingU256;
     address _feeAddress = address(this);
     address _techProfitAddress = address(this);
     uint256 constant DECIMALS = 10**18;
@@ -26,10 +25,10 @@ contract GameManager is IManager, AdminRole {
         propsU256["feeEvolve"] = 6000 * DECIMALS;
         propsU256["loseRate"] = 300;
         propsU256["fightTimeInterval"] = 4 hours;
-        feeSettingU256["brunFeeRate"] = 60; //60%;
-        feeSettingU256["foundationFeeRate"] = 20; //20%;
-        feeSettingU256["inviteeFeeRate"] = 10; //10%;
-        feeSettingU256["techFeeRate"] = 10; //10%;
+        propsU256["brunFeeRate"] = 60; //60%;
+        propsU256["foundationFeeRate"] = 20; //20%;
+        propsU256["inviteeFeeRate"] = 10; //10%;
+        propsU256["techFeeRate"] = 10; //10%;
     }
 
     function battlefields(address _address) external view override returns (bool) {
@@ -120,23 +119,19 @@ contract GameManager is IManager, AdminRole {
         _techProfitAddress = _address;
     }
 
-    function setFeeSettingU256(string memory name, uint256 value) external onlyOwner {
-        feeSettingU256[name] = value;
-    }
-
     function techFeeRate() external view override returns (uint256) {
-        return feeSettingU256["techFeeRate"];
+        return propsU256["techFeeRate"];
     }
 
     function inviteeFeeRate() external view override returns (uint256) {
-        return feeSettingU256["inviteeFeeRate"];
+        return propsU256["inviteeFeeRate"];
     }
 
     function brunFeeRate() external view override returns (uint256) {
-        return feeSettingU256["brunFeeRate"];
+        return propsU256["brunFeeRate"];
     }
 
     function foundationFeeRate() external view override returns (uint256) {
-        return feeSettingU256["foundationFeeRate"];
+        return propsU256["foundationFeeRate"];
     }
 }
