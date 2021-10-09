@@ -21,6 +21,8 @@ describe("GameFi", () => {
     const FEE_LAY_EGG = ether(100)
     const FEE_CHANGE_TRIBE = ether(1)
     const FEE_UPGRADE_GENERATION = ether(5)
+    const EMPTY_REFERRAL = "0x0000000000000000000000000000000000000000"
+    const MAX_AMOUNT = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
     beforeEach(async () => {
         ;[owner, alice, bob, market] = await ethers.getSigners()
@@ -62,29 +64,29 @@ describe("GameFi", () => {
         console.info(`GameFi lanched.`)
 
         // alice: approve transferring to GameFi
-        await gameToken.connect(alice).approve(gameFi.address, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+        await gameToken.connect(alice).approve(gameFi.address, MAX_AMOUNT)
     })
 
     it("Lay one egg", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG))
         await expect(gameFi.connect(bob).layEgg([0]), "bob has no fund").to.be.reverted
     })
 
     it("Lay multi eggs", async () => {
-        await gameFi.connect(alice).layEgg([0, 0, 1, 2, 3])
+        await gameFi.connect(alice).layEgg([0, 0, 1, 2, 3], EMPTY_REFERRAL)
         expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG.mul(5)))
     })
 
     it("Hatch", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000)
         await gameFi.connect(alice).hatch(1)
         expect(await nft.rare(1)).to.eq(3)
     })
 
     it("Fight monster", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000)
         await gameFi.connect(alice).hatch(1)
 
@@ -103,14 +105,14 @@ describe("GameFi", () => {
     })
 
     it("Fight monster > remaining fight num", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000) // rare = 3
         await gameFi.connect(alice).hatch(1)
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num").to.eq(3)
     })
 
     it("Fight monster > remaining fight num > diff intervals", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000) // rare = 3
         await gameFi.connect(alice).hatch(1)
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num, 1st").to.eq(3)
@@ -124,7 +126,7 @@ describe("GameFi", () => {
     })
 
     it("Fight monster in multiple times", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000) // rare = 3
         await gameFi.connect(alice).hatch(1)
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 3").to.eq(3)
@@ -132,9 +134,10 @@ describe("GameFi", () => {
         // mock win
         let fightRatio = 1 // within 80
         await mockRandom.setV(fightRatio)
-        let exp = 5 + Math.floor((fightRatio * 5) / 80)
+        let exp = 5 + Math.floor((fightRatio * (15 - 5)) / 80)
+        console.info(`exp : ${exp}`)
         let totalExp = exp
-        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        await expect(gameFi.connect(alice).fightMonster(1, 0), "fight").emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 2").to.eq(2)
 
@@ -142,16 +145,16 @@ describe("GameFi", () => {
         fightRatio = 88 // out of 80
         await mockRandom.setV(fightRatio)
         exp = 0
-        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        await expect(gameFi.connect(alice).fightMonster(1, 0), "fight").emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 1").to.eq(1)
 
         // mock win
         fightRatio = 60 // within 80
         await mockRandom.setV(fightRatio)
-        exp = 5 + Math.floor((fightRatio * 5) / 80)
+        exp = 5 + Math.floor((fightRatio * (15 - 5)) / 80)
         totalExp += exp
-        await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+        await expect(gameFi.connect(alice).fightMonster(1, 0), "fight").emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
         expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 0").to.eq(0)
 
@@ -160,7 +163,7 @@ describe("GameFi", () => {
     })
 
     it("Fight monster in max times", async () => {
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
         await mockRandom.setV(1000) // rare = 3
         await gameFi.connect(alice).hatch(1)
         expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 3").to.eq(3)
@@ -174,9 +177,11 @@ describe("GameFi", () => {
             // mock win
             const fightRatio = i // within 80
             await mockRandom.setV(fightRatio)
-            const exp = 5 + Math.floor((fightRatio * 5) / 80)
+            const exp = 5 + Math.floor((fightRatio * (15 - 5)) / 80)
             totalExp += exp
-            await expect(gameFi.connect(alice).fightMonster(1, 0)).emit(gameFi, "Fight").withArgs(1, exp, ether(exp))
+            await expect(gameFi.connect(alice).fightMonster(1, 0), "fight " + i)
+                .emit(gameFi, "Fight")
+                .withArgs(1, exp, ether(exp))
             expect(await rewardToken.balanceOf(alice.address), "alice balance").to.eq(ether(totalExp))
             expect(await gameFight.getRemainingFightNum(1), "remaining fight num = 2").to.eq(6 - i)
         }
@@ -185,11 +190,30 @@ describe("GameFi", () => {
         await expect(gameFi.connect(alice).fightMonster(1, 0)).to.be.reverted
     })
 
-    it("Emergency withdraw", async () => {
+    it("Has referral", async () => {
         expect(await gameToken.balanceOf(market.address), "market balance").to.eq(0)
-        await gameFi.connect(alice).layEgg([0])
+        await gameFi.connect(alice).layEgg([0], bob.address)
         expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG))
+        expect(await gameToken.balanceOf(bob.address), "bob balance").to.eq(FEE_LAY_EGG.mul(10).div(100))
+        expect(await gameToken.balanceOf(market.address), "market balance").to.eq(FEE_LAY_EGG.mul(20).div(100))
+    })
+
+    it("No referral", async () => {
+        expect(await gameToken.balanceOf(market.address), "market balance").to.eq(0)
+        await gameFi.connect(alice).layEgg([0], EMPTY_REFERRAL)
+        expect(await gameToken.balanceOf(alice.address), "alice balance").to.eq(ether(10000).sub(FEE_LAY_EGG))
+        expect(await gameToken.balanceOf(market.address), "market balance").to.eq(FEE_LAY_EGG.mul(30).div(100))
+    })
+
+    it("Emergency withdraw", async () => {
+        expect(await gameToken.balanceOf(gameFi.address), "gameFi balance = 0").to.eq(0)
+        await gameToken.connect(alice).transfer(gameFi.address, ether(1))
+        expect(await gameToken.balanceOf(gameFi.address), "gameFi balance = 1").to.eq(ether(1))
+
+        const ownerBalance = await gameToken.balanceOf(owner.address)
+        expect(await gameToken.balanceOf(market.address), "market balance = 0").to.eq(0)
         await gameFi.emergencyWithdraw()
-        expect(await gameToken.balanceOf(market.address), "market balance").to.eq(FEE_LAY_EGG)
+        expect(await gameToken.balanceOf(owner.address), "owner balance = 1").to.eq(ownerBalance.add(ether(1)))
+        expect(await gameToken.balanceOf(gameFi.address), "(after emergencyWithdraw) gameFi balance = 0").to.eq(0)
     })
 })

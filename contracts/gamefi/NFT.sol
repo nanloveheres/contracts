@@ -6,14 +6,12 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./IManager.sol";
 
 contract NFT is ERC721 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.UintSet;
 
     enum Tribe {
         SKYLER,
@@ -28,10 +26,6 @@ contract NFT is ERC721 {
     event UpgradeGeneration(uint256 indexed tokenId, uint256 newGeneration);
     event Exp(uint256 indexed tokenId, uint256 exp);
     event Farming(uint256 indexed tokenId, uint256 time);
-    // event PlaceOrder(uint256 indexed tokenId, address seller, uint256 price);
-    // event CancelOrder(uint256 indexed tokenId, address seller);
-    // event UpdatePrice(uint256 indexed tokenId, address seller, uint256 newPrice);
-    // event FillOrder(uint256 indexed tokenId, address seller);
 
     struct Metadata {
         uint256 generation;
@@ -42,22 +36,12 @@ contract NFT is ERC721 {
         uint256 bornTime;
     }
 
-    struct ItemSale {
-        uint256 tokenId;
-        address owner;
-        uint256 price;
-    }
-
     uint256 public latestTokenId;
     uint256 public nftTotalSupply;
     uint256 public nftHoldLimit;
     mapping(uint256 => bool) public isEvolved;
 
     mapping(uint256 => Metadata) internal heros;
-    mapping(uint256 => ItemSale) internal markets;
-
-    EnumerableSet.UintSet private tokenSales;
-    mapping(address => EnumerableSet.UintSet) private sellerTokens;
 
     IManager public manager;
     address public owner;
@@ -113,7 +97,7 @@ contract NFT is ERC721 {
         }
     }
 
-    function layEggValidate(address receiver) external view onlySpawner returns (bool){
+    function layEggValidate(address receiver) external view onlySpawner returns (bool) {
         uint256 nextTokenId = _getNextTokenId();
         require(nextTokenId <= nftTotalSupply, "All token sold out.");
         require(balanceOf(receiver) <= nftHoldLimit, "The number of EPets has reached the maximum");
@@ -237,96 +221,11 @@ contract NFT is ERC721 {
         }
     }
 
-    function setNFTTotalSupply(uint _totalSupply) external onlyOwner{
+    function setNFTTotalSupply(uint256 _totalSupply) external onlyOwner {
         nftTotalSupply = _totalSupply;
     }
 
-    function setNFTHoldLimit(uint _nftHoldLimit) external onlyOwner{
+    function setNFTHoldLimit(uint256 _nftHoldLimit) external onlyOwner {
         nftHoldLimit = _nftHoldLimit;
     }
-
-
-    // function placeOrder(uint256 _tokenId, uint256 _price) public {
-    //     require(ownerOf(_tokenId) == _msgSender(), "not own");
-    //     require(_price > 0, "nothing is free");
-    //     require(isEvolved[_tokenId], "require: evolved");
-
-    //     tokenOrder(_tokenId, true, _price);
-
-    //     emit PlaceOrder(_tokenId, _msgSender(), _price);
-    // }
-
-    // function cancelOrder(uint256 _tokenId) public {
-    //     require(tokenSales.contains(_tokenId), "not sale");
-    //     ItemSale storage itemSale = markets[_tokenId];
-    //     require(itemSale.owner == _msgSender(), "not own");
-
-    //     tokenOrder(_tokenId, false, 0);
-
-    //     emit CancelOrder(_tokenId, _msgSender());
-    // }
-
-    // function updatePrice(uint256 _tokenId, uint256 _price) public {
-    //     require(_price > 0, "nothing is free");
-    //     require(tokenSales.contains(_tokenId), "not sale");
-    //     ItemSale storage itemSale = markets[_tokenId];
-    //     require(itemSale.owner == _msgSender(), "not own");
-
-    //     itemSale.price = _price;
-
-    //     emit UpdatePrice(_tokenId, _msgSender(), _price);
-    // }
-
-    // function fillOrder(uint256 _tokenId) public {
-    //     require(tokenSales.contains(_tokenId), "not sale");
-    //     ItemSale storage itemSale = markets[_tokenId];
-    //     uint256 feeMarket = itemSale.price.mul(manager.feeMarketRate()).div(manager.divPercent());
-    //     gameToken.transferFrom(_msgSender(), manager.feeAddress(), feeMarket);
-    //     gameToken.transferFrom(_msgSender(), itemSale.owner, itemSale.price.sub(feeMarket));
-
-    //     tokenOrder(_tokenId, false, 0);
-    //     emit FillOrder(_tokenId, _msgSender());
-    // }
-
-    // function tokenOrder(
-    //     uint256 _tokenId,
-    //     bool _sell,
-    //     uint256 _price
-    // ) internal {
-    //     ItemSale storage itemSale = markets[_tokenId];
-    //     if (_sell) {
-    //         transferFrom(_msgSender(), address(this), _tokenId);
-    //         tokenSales.add(_tokenId);
-    //         sellerTokens[_msgSender()].add(_tokenId);
-
-    //         markets[_tokenId] = ItemSale({ tokenId: _tokenId, price: _price, owner: _msgSender() });
-    //     } else {
-    //         transferFrom(address(this), _msgSender(), _tokenId);
-
-    //         tokenSales.remove(_tokenId);
-    //         sellerTokens[itemSale.owner].remove(_tokenId);
-    //         markets[_tokenId] = ItemSale({ tokenId: 0, price: 0, owner: address(0) });
-    //     }
-    // }
-
-    // function marketsSize() public view returns (uint256) {
-    //     return tokenSales.length();
-    // }
-
-    // function orders(address _seller) public view returns (uint256) {
-    //     return sellerTokens[_seller].length();
-    // }
-
-    // function tokenSaleByIndex(uint256 index) public view returns (uint256) {
-    //     return tokenSales.at(index);
-    // }
-
-    // function tokenSaleOfOwnerByIndex(address _seller, uint256 index) public view returns (uint256) {
-    //     return sellerTokens[_seller].at(index);
-    // }
-
-    // function getSale(uint256 _tokenId) public view returns (ItemSale memory) {
-    //     if (tokenSales.contains(_tokenId)) return markets[_tokenId];
-    //     return ItemSale({ tokenId: 0, owner: address(0), price: 0 });
-    // }
 }

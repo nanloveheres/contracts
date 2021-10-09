@@ -16,6 +16,9 @@ import "./IRandom.sol";
 contract GameFi is AdminRole, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
+    // Burn address
+    address public constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
+
     NFT public nft;
     IERC20 public gameToken;
     IERC20 public rewardToken;
@@ -62,29 +65,30 @@ contract GameFi is AdminRole, ReentrancyGuard, Pausable {
         _;
     }
 
-    function layEgg(uint8[] memory tribes, address inviteeAddress) external nonReentrant {
-        require(tribes.length > 0, "wrong tribes");
+    function layEgg(uint8[] memory _tribes, address _referral) external nonReentrant {
+        require(_tribes.length > 0, "wrong tribes");
         require(nft.layEggValidate(_msgSender()), "wrong egg validate");
-        uint256 _amount = manager.feeLayEgg() * tribes.length;
+        uint256 _amount = manager.feeLayEgg() * _tribes.length;
         console.log("$egg:    %s", _amount);
         console.log("$sender: %s", gameToken.balanceOf(_msgSender()));
         //burn
-        gameToken.safeTransferFrom(_msgSender(), address(0), _amount * manager.brunFeeRate() / 100);
+        gameToken.safeTransferFrom(_msgSender(), BURN_ADDRESS, (_amount * manager.brunFeeRate()) / 100);
         //To tech account
-        gameToken.safeTransferFrom(_msgSender(), manager.techProfitAddress(), _amount * manager.techFeeRate()/ 100);
-        if(inviteeAddress != address(0) && _msgSender()!= inviteeAddress){
+        gameToken.safeTransferFrom(_msgSender(), manager.techProfitAddress(), (_amount * manager.techFeeRate()) / 100);
+
+        if (_referral != address(0) && _msgSender() != _referral) {
             //To invitee
-            gameToken.safeTransferFrom(_msgSender(), inviteeAddress, _amount * manager.inviteeFeeRate() / 100);
+            gameToken.safeTransferFrom(_msgSender(), _referral, (_amount * manager.inviteeFeeRate()) / 100);
             //To foundation account
-            gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), _amount * manager.foundationFeeRate() / 100);
-        }else{
-            uint toFoundationAmount = _amount * manager.foundationFeeRate() / 100 + _amount * manager.inviteeFeeRate() / 100;
+            gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), (_amount * manager.foundationFeeRate()) / 100);
+        } else {
+            uint256 toFoundationAmount = (_amount * manager.foundationFeeRate()) / 100 + (_amount * manager.inviteeFeeRate()) / 100;
             //To foundation account
             gameToken.safeTransferFrom(_msgSender(), manager.feeAddress(), toFoundationAmount);
         }
         console.log("$sender: %s", gameToken.balanceOf(_msgSender()));
         console.log("$this:   %s", gameToken.balanceOf(manager.feeAddress()));
-        nft.layEgg(_msgSender(), tribes);
+        nft.layEgg(_msgSender(), _tribes);
     }
 
     function hatch(uint256 _tokenId) external nonReentrant onlyNFTOwner(_tokenId) {
