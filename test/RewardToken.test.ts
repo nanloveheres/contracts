@@ -57,7 +57,7 @@ describe("RewardToken", () => {
 
     it("Calls totalSupply on Token contract", async () => {
         const totalSupply = await token.totalSupply()
-        expect(totalSupply).to.be.equal(ether(1).mul(10**8))
+        expect(totalSupply).to.be.equal(ether(1).mul(10 ** 8))
     })
 
     it("anti whale", async () => {
