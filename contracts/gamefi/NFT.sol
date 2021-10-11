@@ -169,7 +169,7 @@ contract NFT is ERC721Enumerable {
         latestTokenId++;
     }
 
-    function getHero(uint256 _tokenId) public view returns (uint256,NFT.Tribe,uint256,uint256,uint256,uint256) {
+    function getHero(uint256 _tokenId) public view returns (uint256,Tribe,uint256,uint256,uint256,uint256) {
         Metadata storage hero = heros[_tokenId];
         return (hero.generation, hero.tribe, hero.exp, hero.dna, hero.farmTime, hero.bornTime);
     }
