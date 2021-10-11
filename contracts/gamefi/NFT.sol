@@ -92,7 +92,7 @@ contract NFT is ERC721Enumerable {
     function layEgg(address receiver, uint8[] memory tribes) external onlySpawner {
         require(tribes.length > 0, "require tribes: >0");
         require(_getNextTokenId() <= nftTotalSupply, "All EPets sold out.");
-        require(balanceOf(receiver) <= nftHoldLimit, "The number of EPets has reached the maximum");
+        require(balanceOf(receiver) < nftHoldLimit, "The number of EPets has reached the maximum");
 
         for (uint256 index = 0; index < tribes.length; index++) {
             _layEgg(receiver, Tribe(tribes[index]));
@@ -169,8 +169,9 @@ contract NFT is ERC721Enumerable {
         latestTokenId++;
     }
 
-    function getHero(uint256 _tokenId) public view returns (Metadata memory) {
-        return heros[_tokenId];
+    function getHero(uint256 _tokenId) public view returns (uint256,NFT.Tribe,uint256,uint256,uint256,uint256) {
+        Metadata storage hero = heros[_tokenId];
+        return (hero.generation, hero.tribe, hero.exp, hero.dna, hero.farmTime, hero.bornTime);
     }
 
     function bornTime(uint256 _tokenId) public view returns (uint256) {
@@ -178,11 +179,13 @@ contract NFT is ERC721Enumerable {
     }
 
     function level(uint256 _tokenId) public view returns (uint8) {
-        return getLevel(getHero(_tokenId).exp);
+        Metadata storage hero = heros[_tokenId];
+        return getLevel(hero.exp);
     }
 
     function rare(uint256 _tokenId) public view returns (uint8) {
-        uint256 dna = getHero(_tokenId).dna;
+        Metadata storage hero = heros[_tokenId];
+        uint256 dna = hero.dna;
         if (dna == 0) return 0;
         uint256 rareParser = dna % 10000; // [0, 10000)
         if (rareParser < 10) {
